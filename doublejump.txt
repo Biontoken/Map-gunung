@@ -1,0 +1,104 @@
+-- Infinite Jump + Slowmo Jump + Slow Fall + Tombol ON/OFF + Tombol X
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local player = Players.LocalPlayer
+
+-- Character refs
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+local root = character:WaitForChild("HumanoidRootPart")
+
+-- Settings
+local infiniteJumpEnabled = false
+local jumpPowerBoost = 25 -- default Roblox jump power
+local slowFallSpeed = -50
+
+-- GUI utama
+local screenGui = Instance.new("ScreenGui")
+screenGui.Parent = player:WaitForChild("PlayerGui")
+screenGui.ResetOnSpawn = false
+
+-- Tombol ON/OFF
+local toggleButton = Instance.new("TextButton")
+toggleButton.Size = UDim2.new(0, 140, 0, 50)
+toggleButton.Position = UDim2.new(0, 10, 0, 60)
+toggleButton.BackgroundColor3 = Color3.fromRGB(128, 0, 128)
+toggleButton.BackgroundTransparency = 0.5
+toggleButton.TextColor3 = Color3.fromRGB(255,255,255)
+toggleButton.Font = Enum.Font.GothamBold
+toggleButton.TextSize = 20
+toggleButton.Text = "Infinite Jump OFF"
+toggleButton.Parent = screenGui
+
+local uicorner = Instance.new("UICorner", toggleButton)
+uicorner.CornerRadius = UDim.new(0, 10)
+
+-- Tombol X
+local closeButton = Instance.new("TextButton")
+closeButton.Size = UDim2.new(0, 40, 0, 50)
+closeButton.Position = UDim2.new(0, 160, 0, 60)
+closeButton.BackgroundColor3 = Color3.fromRGB(200,0,0)
+closeButton.BackgroundTransparency = 0.5
+closeButton.TextColor3 = Color3.new(1,1,1)
+closeButton.Text = "X"
+closeButton.Font = Enum.Font.GothamBold
+closeButton.TextSize = 28
+closeButton.Parent = screenGui
+
+local uicornerClose = Instance.new("UICorner", closeButton)
+uicornerClose.CornerRadius = UDim.new(0, 10)
+
+-- Toggle ON/OFF
+toggleButton.MouseButton1Click:Connect(function()
+	infiniteJumpEnabled = not infiniteJumpEnabled
+	if infiniteJumpEnabled then
+		toggleButton.Text = "double Jump ON"
+	else
+		toggleButton.Text = "double Jump OFF"
+	end
+end)
+
+-- Update refs saat respawn
+local function updateCharacterRefs(char)
+	character = char
+	humanoid = char:WaitForChild("Humanoid")
+	root = char:WaitForChild("HumanoidRootPart")
+end
+if player.Character then
+	updateCharacterRefs(player.Character)
+end
+player.CharacterAdded:Connect(updateCharacterRefs)
+
+-- Infinite jump
+local jumpConnection
+jumpConnection = UserInputService.JumpRequest:Connect(function()
+	if infiniteJumpEnabled and humanoid then
+		humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+		local goalVelocity = Vector3.new(root.Velocity.X, jumpPowerBoost, root.Velocity.Z)
+		local tween = TweenService:Create(root, TweenInfo.new(0.15, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Velocity = goalVelocity})
+		tween:Play()
+	end
+end)
+
+-- Slow fall
+local stepConnection
+stepConnection = RunService.Stepped:Connect(function()
+	if humanoid and infiniteJumpEnabled then
+		if humanoid:GetState() == Enum.HumanoidStateType.Freefall then
+			if root.Velocity.Y < slowFallSpeed then
+				root.Velocity = Vector3.new(root.Velocity.X, slowFallSpeed, root.Velocity.Z)
+			end
+		end
+	end
+end)
+
+-- Tombol X terminate
+closeButton.MouseButton1Click:Connect(function()
+	infiniteJumpEnabled = false
+	if jumpConnection then jumpConnection:Disconnect() end
+	if stepConnection then stepConnection:Disconnect() end
+	screenGui:Destroy()
+	script:Destroy()
+end)
