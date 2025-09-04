@@ -49,7 +49,8 @@ local navCorner = Instance.new("UICorner")
 navCorner.CornerRadius = UDim.new(0,20)
 navCorner.Parent = Navbar
 
--- Navbar TiSpeededeLabel = Instance.new("TextLabel")
+-- Navbar Title
+local TitleLabel = Instance.new("TextLabel")
 TitleLabel.Size = UDim2.new(1,-60,1,0)
 TitleLabel.Position = UDim2.new(0,15,0,0)
 TitleLabel.BackgroundTransparency = 1
@@ -173,7 +174,7 @@ end
 createButton("","spectator","https://pastefy.app/uzM8fN4Q/raw")
 createButton("","fly & rayap besi","https://pastefy.app/bIjtwpOB/raw")
 
--- 💡 Lampu Kepala Putih
+-- ðŸ’¡ Lampu Kepala Putih
 local Player = game.Players.LocalPlayer
 
 -- Tombol Lampu Kepala
@@ -446,7 +447,7 @@ MainBtn.MouseButton1Click:Connect(function()
 end)
 
 
--- 🔹 Fling
+-- ðŸ”¹ Fling
 local FlingBtn = Instance.new("TextButton")
 FlingBtn.Size = UDim2.new(0,160,0,32)
 FlingBtn.BackgroundColor3 = Color3.fromRGB(10,10,10)
@@ -489,7 +490,7 @@ FlingBtn.MouseButton1Click:Connect(function()
     end
 end)
 
--- 🔹 Selector
+-- ðŸ”¹ Selector
 local scripts = {
     {title = " MT DAUN", url = "https://raw.githubusercontent.com/Biontoken/Map-gunung/refs/heads/main/daun.txt"},
     {title = " MT SIBUATAN", url = "https://raw.githubusercontent.com/Biontoken/Map-gunung/refs/heads/main/%20sibuatan.txt"},
@@ -564,5 +565,3 @@ TitleBtn.MouseButton1Click:Connect(function()
         if func then func() else warn("Loadstring error: "..tostring(err)) end
     end
 end)
-
-
