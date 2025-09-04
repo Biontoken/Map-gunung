@@ -49,7 +49,7 @@ local navCorner = Instance.new("UICorner")
 navCorner.CornerRadius = UDim.new(0,20)
 navCorner.Parent = Navbar
 
--- Navbar TitleSpeedeLabel = Instance.new("TextLabel")
+-- Navbar TiSpeededeLabel = Instance.new("TextLabel")
 TitleLabel.Size = UDim2.new(1,-60,1,0)
 TitleLabel.Position = UDim2.new(0,15,0,0)
 TitleLabel.BackgroundTransparency = 1
@@ -367,7 +367,7 @@ local function createSpeedItem()
     SpeedBtn.Size = UDim2.new(0,120,0,40)
     SpeedBtn.Position = UDim2.new(0.5,130,1,-100) -- kanan tombol Sign
     SpeedBtn.BackgroundColor3 = Color3.fromRGB(10,10,10)
-    SpeedBtn.Text = "Speed x3"
+    SpeedBtn.Text = "Speed"
     SpeedBtn.Font = Enum.Font.GothamBlack
     SpeedBtn.TextSize = 14
     SpeedBtn.TextColor3 = Color3.fromRGB(255,255,255)
@@ -564,4 +564,5 @@ TitleBtn.MouseButton1Click:Connect(function()
         if func then func() else warn("Loadstring error: "..tostring(err)) end
     end
 end)
+
 
