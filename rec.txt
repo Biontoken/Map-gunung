@@ -1,0 +1,315 @@
+--===[ Final GUI Roblox + Repeat Mode per Rekaman ]===--
+local HttpService = game:GetService("HttpService")
+local player = game.Players.LocalPlayer
+local screenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+screenGui.ResetOnSpawn = false
+
+-- Colors
+local ColorMain = Color3.fromRGB(45,45,45)
+local ColorHeader = Color3.fromRGB(90,0,150)
+local ColorButtonNormal = Color3.fromRGB(150,50,220)
+local ColorButtonClick = Color3.fromRGB(100,255,100)
+local ColorRespawnOn = Color3.fromRGB(60,220,100)
+local ColorRespawnOff = Color3.fromRGB(100,200,255)
+local ColorText = Color3.fromRGB(255,255,255)
+local ColorProgress = Color3.fromRGB(0,255,0)
+local ColorRepeatOn = Color3.fromRGB(60,220,100)
+local ColorRepeatOff = Color3.fromRGB(0,200,255)
+
+-- Main Frame
+local mainFrame = Instance.new("Frame", screenGui)
+mainFrame.Size = UDim2.new(0,480,0,400)
+mainFrame.AnchorPoint = Vector2.new(0.5,0.5)
+mainFrame.Position = UDim2.new(0.5,0,0.5,0)
+mainFrame.Active = true
+mainFrame.Draggable = true
+mainFrame.BorderSizePixel = 0
+mainFrame.BackgroundColor3 = ColorMain
+
+-- Header
+local header = Instance.new("Frame", mainFrame)
+header.Size = UDim2.new(1,0,0,45)
+header.BackgroundColor3 = ColorHeader
+header.BorderSizePixel = 0
+
+-- Tombol Helper
+local function createButton(parent,text,posX,posY,sizeX,sizeY,color)
+	local btn = Instance.new("TextButton", parent)
+	btn.Size = UDim2.new(0,sizeX,0,sizeY)
+	btn.Position = UDim2.new(0,posX,0,posY)
+	btn.Text = text
+	btn.BackgroundColor3 = color
+	btn.TextColor3 = ColorText
+	btn.Font = Enum.Font.GothamBold
+	btn.TextScaled = true
+	btn.BorderSizePixel = 0
+	return btn
+end
+
+-- Tombol Header
+local closeBtn = createButton(header,"❌", mainFrame.Size.X.Offset-45,5,35,35,Color3.fromRGB(220,70,70))
+local hideBtn = createButton(header,"➖", mainFrame.Size.X.Offset-85,5,35,35,Color3.fromRGB(255,255,0))
+local modeBtn = createButton(header,"MODE: JALAN",10,7,140,30,ColorRespawnOn)
+local respawnBtn = createButton(header,"AUTO RESPAWN: ON",160,7,140,30,ColorRespawnOn)
+
+-- Record & Stop Buttons
+local recordBtn = createButton(mainFrame," Record",10,60,220,50,ColorButtonNormal)
+local stopBtn = createButton(mainFrame," Stop & Save",250,60,220,50,ColorButtonNormal)
+
+-- Timer Label
+local timerLabel = Instance.new("TextLabel", mainFrame)
+timerLabel.Size = UDim2.new(1,-20,0,30)
+timerLabel.Position = UDim2.new(0,10,0,120)
+timerLabel.BackgroundTransparency = 1
+timerLabel.Text = "00:00.00"
+timerLabel.TextColor3 = ColorText
+timerLabel.Font = Enum.Font.GothamBold
+timerLabel.TextScaled = true
+
+-- ScrollFrame
+local recordList = Instance.new("ScrollingFrame", mainFrame)
+recordList.Size = UDim2.new(1,-20,0,200)
+recordList.Position = UDim2.new(0,10,0,160)
+recordList.CanvasSize = UDim2.new(0,0,0,0)
+recordList.ScrollBarThickness = 6
+recordList.BackgroundColor3 = ColorButtonNormal
+recordList.BackgroundTransparency = 0.3
+recordList.BorderSizePixel = 0
+
+local UIListLayout = Instance.new("UIListLayout", recordList)
+UIListLayout.Padding = UDim.new(0,5)
+UIListLayout.FillDirection = Enum.FillDirection.Vertical
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+-- Mini Button
+local miniBtn = createButton(screenGui,"REC🔴",50,120,80,40,ColorButtonNormal)
+miniBtn.Visible = false
+miniBtn.Active = true
+miniBtn.Draggable = true
+
+--===[ Logic, Stopwatch, Replay, Progress Bar ]===--
+local char = player.Character or player.CharacterAdded:Wait()
+local humanoid = char:WaitForChild("Humanoid")
+local hrp = char:WaitForChild("HumanoidRootPart")
+
+player.CharacterAdded:Connect(function(newChar)
+	char = newChar
+	humanoid = char:WaitForChild("Humanoid")
+	hrp = char:WaitForChild("HumanoidRootPart")
+end)
+
+local recording = false
+local recordData = {}
+local startTime = 0
+local timerRunning = false
+local replaying = false
+local useCFrameMode = false
+local autoRespawn = true
+
+local playerScripts = player:WaitForChild("PlayerScripts")
+if not playerScripts:FindFirstChild("SavedRecords") then
+	local savedFolder = Instance.new("Folder")
+	savedFolder.Name = "SavedRecords"
+	savedFolder.Parent = playerScripts
+end
+local savedFolder = playerScripts:FindFirstChild("SavedRecords")
+
+humanoid.Jumping:Connect(function(active)
+	if recording and active then
+		table.insert(recordData,{pos=hrp.Position,jump=true,time=tick()-startTime})
+	end
+end)
+
+-- Stopwatch Timer
+local function runStopwatch()
+	while timerRunning do
+		local elapsed = tick()-startTime
+		local mins = math.floor(elapsed/60)
+		local secs = math.floor(elapsed%60)
+		local ms = math.floor((elapsed - math.floor(elapsed))*100)
+		timerLabel.Text = string.format("%02d:%02d.%02d",mins,secs,ms)
+		task.wait(0.03)
+	end
+end
+
+-- Record Frame & Replay logic
+local function createRecordFrame(data,name)
+	local recordFrame = Instance.new("Frame",recordList)
+	recordFrame.Size = UDim2.new(1,-5,0,30)
+	recordFrame.BackgroundColor3 = ColorButtonNormal
+	recordFrame.BackgroundTransparency = 0.5
+
+	local nameBox = Instance.new("TextBox",recordFrame)
+	nameBox.Size = UDim2.new(1,-150,1,0)
+	nameBox.Position = UDim2.new(0,0,0,0)
+	nameBox.Text = name
+	nameBox.BackgroundTransparency = 1
+	nameBox.ClearTextOnFocus = false
+
+	local playBtn = createButton(recordFrame,"▶",recordList.AbsoluteSize.X-135,0,30,30,Color3.fromRGB(0,255,0))
+	local delBtn = createButton(recordFrame,"X",recordList.AbsoluteSize.X-95,0,30,30,Color3.fromRGB(200,0,0))
+	local repeatBtn = createButton(recordFrame,"🔁",recordList.AbsoluteSize.X-55,0,30,30,ColorRepeatOff)
+
+	local localRepeatMode = false
+	repeatBtn.MouseButton1Click:Connect(function()
+		localRepeatMode = not localRepeatMode
+		if localRepeatMode then
+			repeatBtn.BackgroundColor3 = ColorRepeatOn
+			repeatBtn.Text = "🔁"
+		else
+			repeatBtn.BackgroundColor3 = ColorRepeatOff
+			repeatBtn.Text = "🔁"
+		end
+	end)
+
+	-- Progress bar
+	local progressBG = Instance.new("Frame", recordFrame)
+	progressBG.Size = UDim2.new(1,0,0,4)
+	progressBG.Position = UDim2.new(0,0,1,0)
+	progressBG.BackgroundColor3 = Color3.fromRGB(50,50,50)
+	progressBG.BorderSizePixel = 0
+	progressBG.BackgroundTransparency = 0.7
+
+	local progressBar = Instance.new("Frame", progressBG)
+	progressBar.Size = UDim2.new(0,0,1,0)
+	progressBar.Position = UDim2.new(0,0,0,0)
+	progressBar.BackgroundColor3 = ColorProgress
+	progressBar.BorderSizePixel = 0
+
+	local function replayData()
+		if replaying then return end
+		replaying = true
+		spawn(function()
+			repeat
+				task.wait(5) -- delay 5 detik sebelum replay
+
+				if #data>0 then
+					if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+						player.CharacterAdded:Wait()
+						char = player.Character
+						humanoid = char:WaitForChild("Humanoid")
+						hrp = char:WaitForChild("HumanoidRootPart")
+					end
+
+					hrp.CFrame = CFrame.new(data[1].pos)
+					local startPlay = tick()
+					for i=2,#data do
+						if not replaying then break end
+						local frame = data[i]
+						local now = tick()-startPlay
+						local waitTime = frame.time-now
+						if waitTime>0 then task.wait(waitTime) end
+						if frame.pos then
+							if useCFrameMode then
+								hrp.CFrame = CFrame.new(frame.pos)
+							else
+								humanoid:MoveTo(frame.pos)
+							end
+						end
+						if frame.jump then
+							humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+						end
+						local prog = i/#data
+						progressBar:TweenSize(UDim2.new(prog,0,1,0),"Out","Linear",0.03,true)
+					end
+					progressBar:TweenSize(UDim2.new(0,0,1,0),"Out","Linear",0.2,true)
+
+					if autoRespawn and player.Character:FindFirstChild("Humanoid") then
+						player.Character.Humanoid.Health=0
+					end
+				end
+
+				if localRepeatMode and replaying then
+					if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+						player.CharacterAdded:Wait()
+						char = player.Character
+						humanoid = char:WaitForChild("Humanoid")
+						hrp = char:WaitForChild("HumanoidRootPart")
+					end
+				end
+			until not localRepeatMode or not replaying
+			replaying=false
+		end)
+	end
+
+	playBtn.MouseButton1Click:Connect(function()
+		replayData()
+	end)
+	delBtn.MouseButton1Click:Connect(function()
+		if replaying then replaying=false end
+		recordFrame:Destroy()
+	end)
+
+	recordList.CanvasSize = UDim2.new(0,0,0,UIListLayout.AbsoluteContentSize.Y+10)
+end
+
+-- Start & Stop Recording
+local function startRecording()
+	recordData={}
+	startTime=tick()
+	recording=true
+	timerRunning=true
+	timerLabel.Text="00:00.00"
+	spawn(runStopwatch)
+	spawn(function()
+		while recording do
+			table.insert(recordData,{pos=hrp.Position,jump=false,time=tick()-startTime})
+			task.wait(0.2)
+		end
+	end)
+	recordBtn.BackgroundColor3=ColorButtonClick
+end
+
+local function stopRecording()
+	recording=false
+	timerRunning=false
+	recordBtn.BackgroundColor3=ColorButtonNormal
+	stopBtn.BackgroundColor3=ColorButtonClick
+	task.delay(0.4,function() stopBtn.BackgroundColor3=ColorButtonNormal end)
+	timerLabel.Text="00:00.00"
+
+	if #recordData>0 then
+		local saveVal=Instance.new("StringValue")
+		saveVal.Name="JSY_"..tostring(os.time())
+		saveVal.Value=HttpService:JSONEncode(recordData)
+		saveVal.Parent=savedFolder
+
+		createRecordFrame(recordData,saveVal.Name)
+		recordData={}
+	end
+end
+
+-- Tombol connections
+recordBtn.MouseButton1Click:Connect(startRecording)
+stopBtn.MouseButton1Click:Connect(stopRecording)
+closeBtn.MouseButton1Click:Connect(function()
+	replaying=false
+	screenGui:Destroy()
+end)
+hideBtn.MouseButton1Click:Connect(function()
+	mainFrame.Visible=false
+	miniBtn.Visible=true
+end)
+miniBtn.MouseButton1Click:Connect(function()
+	mainFrame.Visible=true
+	miniBtn.Visible=false
+	mainFrame.Position=UDim2.new(0.5,0,0.5,0)
+end)
+modeBtn.MouseButton1Click:Connect(function()
+	useCFrameMode = not useCFrameMode
+	if useCFrameMode then
+		modeBtn.Text="MODE: AMAN"
+	else
+		modeBtn.Text="MODE: JALAN"
+	end
+end)
+respawnBtn.MouseButton1Click:Connect(function()
+	autoRespawn = not autoRespawn
+	if autoRespawn then
+		respawnBtn.Text="AUTO RESPAWN: ON"
+		respawnBtn.BackgroundColor3 = ColorRespawnOn
+	else
+		respawnBtn.Text="AUTO RESPAWN: OFF"
+		respawnBtn.BackgroundColor3 = ColorRespawnOff
+	end
+end)
