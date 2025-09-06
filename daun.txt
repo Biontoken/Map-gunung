@@ -5,12 +5,11 @@ local hrp = char:WaitForChild("HumanoidRootPart")
 
 -- 🗺️ Koordinat checkpoint
 local checkpoints = {
-    Vector3.new(135.5, 141.6, -174.5),  
-    Vector3.new(326.5, 89.6, -433.8),
-    Vector3.new(476.1, 169.6, -940.6), 
-    Vector3.new(929.7, 133.2, -626.4), 
-    Vector3.new(923.4, 101.5, 279.2), 
-    Vector3.new(271.2, 325.0, 694.8),
+    Vector3.new(-624.4, 250.1, -382.7),  
+    Vector3.new(-1202.9, 261.5, -487.0),
+    Vector3.new(-1399.2, 578.2, -951.6), 
+    Vector3.new(-1700.5, 816.4, -1400.2), 
+    Vector3.new(-3242.7, 1717.0, -2570.1), 
 }
 
 local delayTime = 120
