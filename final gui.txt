@@ -175,6 +175,7 @@ createButton("","spectator","https://pastefy.app/uzM8fN4Q/raw")
 createButton("","fly & rayap besi","https://pastefy.app/bIjtwpOB/raw")
 createButton("","double jump","https://raw.githubusercontent.com/Biontoken/Map-gunung/refs/heads/main/doublejump.txt")
 createButton("","jalan udara","https://raw.githubusercontent.com/Biontoken/Map-gunung/refs/heads/main/Airwalk.txt")
+createButton("","REC🔴","https://raw.githubusercontent.com/Biontoken/Map-gunung/refs/heads/main/rec.txt")
 
 -- ðŸ’¡ Lampu Kepala Putih
 local Player = game.Players.LocalPlayer
