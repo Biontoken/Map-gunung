@@ -1,0 +1,265 @@
+-- ✨ Teleport GUI - Ji Son Ying (versi ungu + border putih + auto repeat final)
+local player = game.Players.LocalPlayer
+local char = player.Character or player.CharacterAdded:Wait()
+local hrp = char:WaitForChild("HumanoidRootPart")
+
+-- 🗺️ Koordinat checkpoint
+local checkpoints = {
+   Vector3.new(615.04, 254.24, 671.78),
+   Vector3.new(-23463.65, 6352.11, -6882.95),
+}
+
+local delayTime = 120
+local running = false
+local current = 1
+local autoRepeat = false -- 🔄 auto repeat toggle
+
+-- 📦 GUI utama
+local gui = Instance.new("ScreenGui")
+gui.Name = "TeleportGui"
+gui.Parent = game:GetService("CoreGui")
+
+-- 🖼️ Frame utama
+local mainFrame = Instance.new("Frame", gui)
+mainFrame.Size = UDim2.new(0, 200, 0, 260)
+mainFrame.Position = UDim2.new(0.5, -100, 0.5, -130)
+mainFrame.BackgroundColor3 = Color3.fromRGB(128, 0, 128)
+mainFrame.BackgroundTransparency = 0.3
+mainFrame.BorderSizePixel = 0
+mainFrame.Active = true
+mainFrame.Draggable = true
+Instance.new("UICorner", mainFrame).CornerRadius = UDim.new(0, 10)
+local frameStroke = Instance.new("UIStroke", mainFrame)
+frameStroke.Thickness = 2
+frameStroke.Color = Color3.fromRGB(255, 255, 255)
+
+-- 🏷️ Title bar
+local titleBar = Instance.new("Frame", mainFrame)
+titleBar.Size = UDim2.new(1, 0, 0, 25)
+titleBar.BackgroundColor3 = Color3.fromRGB(138, 43, 226)
+titleBar.BorderSizePixel = 0
+Instance.new("UICorner", titleBar).CornerRadius = UDim.new(0, 8)
+local navStroke = Instance.new("UIStroke", titleBar)
+navStroke.Thickness = 1.5
+navStroke.Color = Color3.fromRGB(255, 255, 255)
+
+-- 📝 Judul
+local title = Instance.new("TextLabel", titleBar)
+title.Size = UDim2.new(1, -60, 1, 0)
+title.Position = UDim2.new(0, 8, 0, 0)
+title.BackgroundTransparency = 1
+title.Text = "JI SON YING"
+title.Font = Enum.Font.GothamBold
+title.TextSize = 14
+title.TextXAlignment = Enum.TextXAlignment.Left
+title.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+-- 🔄 Indikator Repeat di title bar
+local repeatIndicator = Instance.new("TextLabel", titleBar)
+repeatIndicator.Size = UDim2.new(0, 80, 1, 0)
+repeatIndicator.Position = UDim2.new(1, -140, 0, 0)
+repeatIndicator.BackgroundTransparency = 1
+repeatIndicator.Text = ""
+repeatIndicator.Font = Enum.Font.GothamBold
+repeatIndicator.TextSize = 12
+repeatIndicator.TextColor3 = Color3.fromRGB(0, 255, 0)
+repeatIndicator.TextXAlignment = Enum.TextXAlignment.Right
+repeatIndicator.Visible = false
+
+-- 🔽 Tombol minimize
+local minBtn = Instance.new("TextButton", titleBar)
+minBtn.Size = UDim2.new(0, 20, 0, 20)
+minBtn.Position = UDim2.new(1, -22, 0.5, -10)
+minBtn.Text = "▾"
+minBtn.BackgroundColor3 = Color3.fromRGB(220, 220, 220)
+minBtn.TextColor3 = Color3.fromRGB(0, 0, 0)
+minBtn.Font = Enum.Font.GothamBold
+minBtn.TextSize = 14
+minBtn.BorderSizePixel = 0
+Instance.new("UICorner", minBtn).CornerRadius = UDim.new(0, 5)
+
+-- ❌ Tombol close
+local closeBtn = Instance.new("TextButton", titleBar)
+closeBtn.Size = UDim2.new(0, 20, 0, 20)
+closeBtn.Position = UDim2.new(1, -44, 0.5, -10)
+closeBtn.Text = "X"
+closeBtn.BackgroundColor3 = Color3.fromRGB(220, 50, 50)
+closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeBtn.Font = Enum.Font.GothamBold
+closeBtn.TextSize = 14
+closeBtn.BorderSizePixel = 0
+Instance.new("UICorner", closeBtn).CornerRadius = UDim.new(0, 5)
+closeBtn.MouseButton1Click:Connect(function()
+    running = false
+    gui:Destroy()
+end)
+
+-- ▶️ Tombol Mulai/Berhenti
+local mainBtn = Instance.new("TextButton", mainFrame)
+mainBtn.Size = UDim2.new(0, 140, 0, 35)
+mainBtn.Position = UDim2.new(0.5, -70, 0, 45)
+mainBtn.Text = "Mulai"
+mainBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+mainBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+mainBtn.Font = Enum.Font.GothamBold
+mainBtn.TextSize = 16
+mainBtn.BorderSizePixel = 0
+Instance.new("UICorner", mainBtn).CornerRadius = UDim.new(0, 8)
+
+-- 🔄 Tombol Auto Repeat
+local repeatBtn = Instance.new("TextButton", mainFrame)
+repeatBtn.Size = UDim2.new(0, 140, 0, 30)
+repeatBtn.Position = UDim2.new(0.5, -70, 0, 85)
+repeatBtn.Text = "Auto Repeat: OFF"
+repeatBtn.BackgroundColor3 = Color3.fromRGB(80, 0, 80)
+repeatBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+repeatBtn.Font = Enum.Font.GothamBold
+repeatBtn.TextSize = 14
+repeatBtn.BorderSizePixel = 0
+Instance.new("UICorner", repeatBtn).CornerRadius = UDim.new(0, 8)
+
+local TweenService = game:GetService("TweenService")
+
+repeatBtn.MouseButton1Click:Connect(function()
+    autoRepeat = not autoRepeat
+    if autoRepeat then
+        repeatBtn.Text = "Auto Repeat: ON"
+        repeatBtn.BackgroundColor3 = Color3.fromRGB(0, 120, 200)
+        repeatIndicator.Text = "[🔁 ON]"
+        repeatIndicator.Visible = true
+        -- animasi kedip
+        task.spawn(function()
+            while autoRepeat and repeatIndicator.Parent do
+                TweenService:Create(repeatIndicator, TweenInfo.new(0.5), {TextColor3 = Color3.fromRGB(255,255,255)}):Play()
+                task.wait(0.5)
+                TweenService:Create(repeatIndicator, TweenInfo.new(0.5), {TextColor3 = Color3.fromRGB(0,255,0)}):Play()
+                task.wait(0.5)
+            end
+        end)
+    else
+        repeatBtn.Text = "Auto Repeat: OFF"
+        repeatBtn.BackgroundColor3 = Color3.fromRGB(80, 0, 80)
+        repeatIndicator.Text = ""
+        repeatIndicator.Visible = false
+    end
+end)
+
+-- ⏳ Delay TextBox
+local delayBox = Instance.new("TextBox", mainFrame)
+delayBox.Size = UDim2.new(0, 100, 0, 25)
+delayBox.Position = UDim2.new(0.5, -50, 0, 125)
+delayBox.BackgroundColor3 = Color3.fromRGB(60, 0, 60)
+delayBox.BackgroundTransparency = 0.2
+delayBox.Text = tostring(delayTime)
+delayBox.Font = Enum.Font.GothamBold
+delayBox.TextSize = 14
+delayBox.TextColor3 = Color3.fromRGB(255, 255, 255)
+delayBox.ClearTextOnFocus = false
+Instance.new("UICorner", delayBox).CornerRadius = UDim.new(0, 6)
+
+delayBox.FocusLost:Connect(function()
+    local num = tonumber(delayBox.Text)
+    if num and num > 0 then
+        delayTime = math.floor(num)
+        delayBox.Text = tostring(delayTime)
+    else
+        delayBox.Text = tostring(delayTime)
+    end
+end)
+
+-- 📌 Note
+local noteLabel = Instance.new("TextLabel", mainFrame)
+noteLabel.Size = UDim2.new(1, -10, 0, 40)
+noteLabel.Position = UDim2.new(0, 5, 1, -70)
+noteLabel.BackgroundTransparency = 1
+noteLabel.Text = "WARN : MT LEMBAYANA speednya kalian ubah di 5 detik ke atas supaya gak lag"
+noteLabel.Font = Enum.Font.Gotham
+noteLabel.TextSize = 12
+noteLabel.TextColor3 = Color3.fromRGB(255, 200, 0)
+noteLabel.TextWrapped = true
+noteLabel.TextXAlignment = Enum.TextXAlignment.Center
+noteLabel.TextYAlignment = Enum.TextYAlignment.Center
+
+-- 🗺️ MAP Label
+local mapLabel = Instance.new("TextLabel", mainFrame)
+mapLabel.Size = UDim2.new(1, 0, 0, 20)
+mapLabel.Position = UDim2.new(0, 0, 1, -25)
+mapLabel.BackgroundTransparency = 1
+mapLabel.Text = "MAP : MT LEMBAYANA"
+mapLabel.Font = Enum.Font.GothamBold
+mapLabel.TextSize = 12
+mapLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+
+-- 🚀 Fungsi teleport
+local function startTeleport()
+    while running do
+        if current > #checkpoints then
+            if autoRepeat then
+                current = 1
+            else
+                running = false
+                mainBtn.Text = "Mulai"
+                mainBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+                current = 1
+                break
+            end
+        end
+        local char = player.Character or player.CharacterAdded:Wait()
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        local humanoid = char:FindFirstChildOfClass("Humanoid")
+        if hrp and humanoid then
+            local pos = checkpoints[current] + Vector3.new(0, 5, 0)
+            hrp.CFrame = CFrame.new(pos)
+            hrp.Velocity = Vector3.new(0, 0, 0)
+            humanoid.PlatformStand = true
+            task.delay(0.5, function()
+                if humanoid then humanoid.PlatformStand = false end
+            end)
+        end
+        current += 1
+        task.wait(delayTime)
+    end
+end
+
+-- 🌈 RGB tombol Mulai saat aktif
+local function startRGB()
+    task.spawn(function()
+        local t = 0
+        while running and mainBtn.Parent do
+            t += 0.05
+            local r = math.floor(math.sin(t) * 127 + 128)
+            local g = math.floor(math.sin(t + 2) * 127 + 128)
+            local b = math.floor(math.sin(t + 4) * 127 + 128)
+            mainBtn.BackgroundColor3 = Color3.fromRGB(r, g, b)
+            task.wait(0.05)
+        end
+    end)
+end
+
+-- 🔘 Klik tombol Mulai/Berhenti
+mainBtn.MouseButton1Click:Connect(function()
+    if not running then
+        running = true
+        mainBtn.Text = "Berhenti"
+        startRGB()
+        task.spawn(startTeleport)
+    else
+        running = false
+        mainBtn.Text = "Mulai"
+        mainBtn.BackgroundColor3 = Color3.fromRGB(0, 170, 0)
+    end
+end)
+
+-- ↔️ Tween minimize
+local minimized = false
+minBtn.MouseButton1Click:Connect(function()
+    minimized = not minimized
+    for _, v in pairs(mainFrame:GetChildren()) do
+        if v:IsA("GuiObject") and v ~= titleBar then
+            v.Visible = not minimized
+        end
+    end
+    local goalSize = minimized and UDim2.new(0, 200, 0, 25) or UDim2.new(0, 200, 0, 260)
+    TweenService:Create(mainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {Size = goalSize}):Play()
+    minBtn.Text = minimized and "▸" or "▾"
+end)
