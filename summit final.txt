@@ -142,7 +142,8 @@ Vector3.new(5546.85, 6874.24, -1047.64),
 Vector3.new(4328.29, 7641.47, 130.04),
 Vector3.new(3456.99, 7710.24, 935.25),
 Vector3.new(3038.18, 7878.24, 1040.68),
-}akhirat =========================
+},
+}
 --  STATE
 -- =========================
 local settingsState = {
@@ -602,4 +603,5 @@ closeBtn.MouseButton1Click:Connect(function()
     runToken = runToken + 1
     screenGui:Destroy()
 end)
+
 
