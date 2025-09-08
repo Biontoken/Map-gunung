@@ -567,8 +567,8 @@ minimizeBtn.MouseButton1Click:Connect(function()
         mainFrame.Visible = false
         openButton = Instance.new("TextButton")
         openButton.Size = UDim2.new(0, 150, 0, 40)
-        openButton.AnchorPoint = Vector2.new(0.5, 0)
-        openButton.Position = UDim2.new(0.5, 0, 0, 10)
+        openButton.AnchorPoint = Vector2.new(0, 1)
+        openButton.Position = UDim2.new(0.5, 10, 1, -10)
         openButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
         openButton.BorderColor3 = Color3.fromRGB(0,0,0)
         openButton.BorderSizePixel = 2
@@ -603,5 +603,6 @@ closeBtn.MouseButton1Click:Connect(function()
     runToken = runToken + 1
     screenGui:Destroy()
 end)
+
 
 
