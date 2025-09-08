@@ -118,9 +118,31 @@ local coordinates = {
     Vector3.new(-1322.29, 257.91, -2252.74),
     Vector3.new(-1316.74, 474.24, -3453.50),
     },
-}
-
--- =========================
+["Akhirat"] = {
+Vector3.new(-134.86, 421.50, -220.50),
+Vector3.new(-3.96, 949.83, -1050.66),
+Vector3.new(108.29, 1201.77, -1361.92),
+Vector3.new(103.15, 1465.62, -1807.12),
+Vector3.new(298.18, 1865.52, -2329.94),
+Vector3.new(557.54, 2085.80, -2559.11),
+Vector3.new(752.14, 2186.24, -2498.52),
+Vector3.new(791.83, 2330.24, -2640.45),
+Vector3.new(968.46, 2518.24, -2633.25),
+Vector3.new(1237.96, 2694.04, -2801.77),
+Vector3.new(1620.47, 3058.04, -2751.82),
+Vector3.new(1811.44, 3578.24, -3244.52),
+Vector3.new(2810.36, 4422.27, -4796.40),
+Vector3.new(3470.50, 4858.04, -4178.06),
+Vector3.new(3478.13, 5106.04, -4278.60),
+Vector3.new(3973.48, 5666.24, -3970.84),
+Vector3.new(4496.54, 5898.34, -3791.74),
+Vector3.new(5063.47, 6370.24, -2979.08),
+Vector3.new(5537.54, 6590.24, -2490.93),
+Vector3.new(5546.85, 6874.24, -1047.64),
+Vector3.new(4328.29, 7641.47, 130.04),
+Vector3.new(3456.99, 7710.24, 935.25),
+Vector3.new(3038.18, 7878.24, 1040.68),
+}akhirat =========================
 --  STATE
 -- =========================
 local settingsState = {
@@ -514,7 +536,7 @@ local function addScriptButton(name)
 end
 
 -- Generate buttons
-local mapOrder = {"Daun", "Arunika", "Lembayana", "Atin", "Sibuatan", "Galunggung"}
+local mapOrder = {"Daun", "Arunika", "Lembayana", "Atin", "Sibuatan", "Galunggung", "Akhirat"}
 for _, name in ipairs(mapOrder) do
     if coordinates[name] then
         addScriptButton(name)
@@ -580,3 +602,4 @@ closeBtn.MouseButton1Click:Connect(function()
     runToken = runToken + 1
     screenGui:Destroy()
 end)
+
