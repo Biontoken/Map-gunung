@@ -143,6 +143,14 @@ Vector3.new(4328.29, 7641.47, 130.04),
 Vector3.new(3456.99, 7710.24, 935.25),
 Vector3.new(3038.18, 7878.24, 1040.68),
 },
+["Yahayuk"] = {
+Vector3.new(-418.51, 249.87, 767.73),
+Vector3.new(-348.52, 389.50, 523.04),
+Vector3.new(287.24, 430.50, 505.24),
+Vector3.new(335.25, 491.50, 348.57),
+Vector3.new(213.24, 315.50, -146.14),
+Vector3.new(-609.58, 906.24, -535.39),
+},
 }
 --  STATE
 -- =========================
@@ -537,7 +545,7 @@ local function addScriptButton(name)
 end
 
 -- Generate buttons
-local mapOrder = {"Daun", "Arunika", "Lembayana", "Atin", "Sibuatan", "Galunggung", "Akhirat"}
+local mapOrder = {"Daun", "Arunika", "Lembayana", "Atin", "Sibuatan", "Galunggung", "Akhirat", "Yahayuk"}
 for _, name in ipairs(mapOrder) do
     if coordinates[name] then
         addScriptButton(name)
@@ -603,6 +611,7 @@ closeBtn.MouseButton1Click:Connect(function()
     runToken = runToken + 1
     screenGui:Destroy()
 end)
+
 
 
 
