@@ -13,7 +13,7 @@ ScreenGui.ResetOnSpawn = false
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0,260,0,320)
 MainFrame.Position = UDim2.new(0.5,-130,0.5,-160)
-MainFrame.BackgroundColor3 = Color3.fromRGB(50,0,80)
+MainFrame.BackgroundColor3 = Color3.fromRGB(0,0,0)
 MainFrame.BackgroundTransparency = 0.1
 MainFrame.Active = true
 MainFrame.Draggable = true
@@ -42,7 +42,7 @@ uiGradient.Parent = MainFrame
 -- Navbar
 local Navbar = Instance.new("Frame")
 Navbar.Size = UDim2.new(1,0,0,50)
-Navbar.BackgroundColor3 = Color3.fromRGB(60,0,140)
+Navbar.BackgroundColor3 = Color3.fromRGB(0,0,0)
 Navbar.Parent = MainFrame
 
 local navCorner = Instance.new("UICorner")
@@ -54,7 +54,7 @@ local TitleLabel = Instance.new("TextLabel")
 TitleLabel.Size = UDim2.new(1,-60,1,0)
 TitleLabel.Position = UDim2.new(0,15,0,0)
 TitleLabel.BackgroundTransparency = 1
-TitleLabel.Text = "JI SON YING"
+TitleLabel.Text = "JSY CHEAT"
 TitleLabel.Font = Enum.Font.GothamBlack
 TitleLabel.TextSize = 18
 TitleLabel.TextColor3 = Color3.fromRGB(255,255,255)
@@ -97,7 +97,7 @@ end)
 local MiniFrame = Instance.new("TextButton")
 MiniFrame.Size = UDim2.new(0,60,0,30)
 MiniFrame.Position = UDim2.new(1,-80,0,10) -- pojok kanan atas
-MiniFrame.BackgroundColor3 = Color3.fromRGB(30,0,60)
+MiniFrame.BackgroundColor3 = Color3.fromRGB(0,0,0)
 MiniFrame.Text = "JSY"
 MiniFrame.Font = Enum.Font.GothamBlack
 MiniFrame.TextSize = 18
@@ -490,82 +490,5 @@ FlingBtn.MouseButton1Click:Connect(function()
     else
         FlingBtn.Text = "TENDANG OFF"
         FlingBtn.BackgroundColor3 = Color3.fromRGB(10,10,10)
-    end
-end)
-
--- ðŸ”¹ Selector
-local scripts = {
-    {title = " MT DAUN", url = "https://raw.githubusercontent.com/Biontoken/Map-gunung/refs/heads/main/daun.txt"},
-    {title = " MT SIBUATAN", url = "https://raw.githubusercontent.com/Biontoken/Map-gunung/refs/heads/main/%20sibuatan.txt"},
-    {title = " MT ATIN", url = "https://raw.githubusercontent.com/Biontoken/Map-gunung/refs/heads/main/atin.txt"},
-    {title = " MT ARUNIKA", url = "https://raw.githubusercontent.com/Biontoken/Map-gunung/refs/heads/main/arunika.txt"},
-    {title = " MT LEMBAYANA", url = "https://raw.githubusercontent.com/Biontoken/Map-gunung/refs/heads/main/lembayana.txt"},
-}
-local currentIndex = 1
-
-local SelectorFrame = Instance.new("Frame")
-SelectorFrame.Size = UDim2.new(0,200,0,36)
-SelectorFrame.BackgroundTransparency = 1
-SelectorFrame.Parent = ScrollFrame
-
-local RowLayout = Instance.new("UIListLayout")
-RowLayout.FillDirection = Enum.FillDirection.Horizontal
-RowLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
-RowLayout.Padding = UDim.new(0,6)
-RowLayout.Parent = SelectorFrame
-
-local PrevBtn = Instance.new("TextButton")
-PrevBtn.Size = UDim2.new(0,40,1,0)
-PrevBtn.Text = "<"
-PrevBtn.Font = Enum.Font.GothamBlack
-PrevBtn.TextSize = 20
-PrevBtn.BackgroundColor3 = Color3.fromRGB(150,0,200)
-PrevBtn.TextColor3 = Color3.new(1,1,1)
-Instance.new("UICorner",PrevBtn).CornerRadius = UDim.new(0,8)
-PrevBtn.Parent = SelectorFrame
-
-local TitleBtn = Instance.new("TextButton")
-TitleBtn.Size = UDim2.new(0,100,1,0)
-TitleBtn.BackgroundColor3 = Color3.fromRGB(0,0,0)
-TitleBtn.Font = Enum.Font.GothamBlack
-TitleBtn.TextSize = 14
-TitleBtn.TextColor3 = Color3.fromRGB(255,255,255)
-TitleBtn.Text = " "..scripts[currentIndex].title.." "
-Instance.new("UICorner",TitleBtn).CornerRadius = UDim.new(0,10)
-TitleBtn.Parent = SelectorFrame
-
-local NextBtn = Instance.new("TextButton")
-NextBtn.Size = UDim2.new(0,40,1,0)
-NextBtn.Text = ">"
-NextBtn.Font = Enum.Font.GothamBlack
-NextBtn.TextSize = 20
-NextBtn.BackgroundColor3 = Color3.fromRGB(150,0,200)
-NextBtn.TextColor3 = Color3.new(1,1,1)
-Instance.new("UICorner",NextBtn).CornerRadius = UDim.new(0,8)
-NextBtn.Parent = SelectorFrame
-
-local function updateTitle()
-    TitleBtn.TextTransparency = 1
-    TitleBtn.Text = " "..scripts[currentIndex].title.." "
-    TweenService:Create(TitleBtn,TweenInfo.new(0.2),{TextTransparency = 0}):Play()
-end
-
-PrevBtn.MouseButton1Click:Connect(function()
-    currentIndex = (currentIndex - 2) % #scripts + 1
-    updateTitle()
-end)
-NextBtn.MouseButton1Click:Connect(function()
-    currentIndex = currentIndex % #scripts + 1
-    updateTitle()
-end)
-
-TitleBtn.MouseButton1Click:Connect(function()
-    local selected = scripts[currentIndex]
-    local success, response = pcall(function()
-        return game:HttpGet(selected.url)
-    end)
-    if success and response then
-        local func, err = loadstring(response)
-        if func then func() else warn("Loadstring error: "..tostring(err)) end
     end
 end)
