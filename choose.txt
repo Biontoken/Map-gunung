@@ -89,7 +89,7 @@ local minimizedSize = UDim2.new(0, 120, 0, 40)
 local minimizedPos = UDim2.new(1, -130, 0.5, -20)
 
 local floatingSize = UDim2.new(0, 120, 0, 40)
-local floatingPos = UDim2.new(1, -130, 0.5, 40) -- sedikit turun dari minimize
+local floatingPos = UDim2.new(1, -130, 0.5, -20) -- sedikit turun dari minimize
 
 -- FUNCTION BALIK NORMAL
 local function expandToNormal()
@@ -156,3 +156,4 @@ SummitButton.MouseButton1Click:Connect(function()
     shrinkToFloating()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/Biontoken/Map-gunung/refs/heads/main/summit%20final.txt"))()
 end)
+
