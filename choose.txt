@@ -119,7 +119,7 @@ local function shrinkToFloating()
     MinimizeButton.Visible = false
     MiniText.Visible = true
     RestoreButton.Visible = true
-    MiniText.Text = "Floating"
+    MiniText.Text = "JSY"
 end
 
 -- TOMBOL MINIMIZE
@@ -156,4 +156,5 @@ SummitButton.MouseButton1Click:Connect(function()
     shrinkToFloating()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/Biontoken/Map-gunung/refs/heads/main/summit%20final.txt"))()
 end)
+
 
