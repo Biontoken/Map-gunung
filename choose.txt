@@ -1,0 +1,158 @@
+-- FINAL GUI SYSTEM
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "FinalGUI"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+-- FRAME UTAMA
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 250, 0, 170)
+MainFrame.Position = UDim2.new(0.5, -125, 0.5, -85)
+MainFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+MainFrame.BorderSizePixel = 2
+MainFrame.BorderColor3 = Color3.fromRGB(255, 255, 255)
+MainFrame.Parent = ScreenGui
+
+-- JUDUL
+local Title = Instance.new("TextLabel")
+Title.Text = "JSY"
+Title.Size = UDim2.new(1, 0, 0, 30)
+Title.BackgroundTransparency = 1
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.Font = Enum.Font.SourceSansBold
+Title.TextSize = 20
+Title.Parent = MainFrame
+
+-- TOMBOL CHEAT
+local CheatButton = Instance.new("TextButton")
+CheatButton.Text = "Cheat"
+CheatButton.Size = UDim2.new(0, 100, 0, 30)
+CheatButton.Position = UDim2.new(0.5, -50, 0, 60)
+CheatButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+CheatButton.BorderSizePixel = 2
+CheatButton.BorderColor3 = Color3.fromRGB(255, 255, 255)
+CheatButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+CheatButton.Parent = MainFrame
+
+-- TOMBOL SUMMIT
+local SummitButton = Instance.new("TextButton")
+SummitButton.Text = "Summit"
+SummitButton.Size = UDim2.new(0, 100, 0, 30)
+SummitButton.Position = UDim2.new(0.5, -50, 0, 100)
+SummitButton.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+SummitButton.BorderSizePixel = 2
+SummitButton.BorderColor3 = Color3.fromRGB(255, 255, 255)
+SummitButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+SummitButton.Parent = MainFrame
+
+-- TOMBOL MINIMIZE
+local MinimizeButton = Instance.new("TextButton")
+MinimizeButton.Text = "-"
+MinimizeButton.Size = UDim2.new(0, 30, 0, 30)
+MinimizeButton.Position = UDim2.new(1, -35, 0, 3)
+MinimizeButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+MinimizeButton.BorderSizePixel = 2
+MinimizeButton.BorderColor3 = Color3.fromRGB(255, 255, 255)
+MinimizeButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+MinimizeButton.Parent = MainFrame
+
+-- LABEL + RESTORE (untuk floating/minimize)
+local MiniText = Instance.new("TextLabel")
+MiniText.Text = "JSY"
+MiniText.Size = UDim2.new(1, -30, 1, 0)
+MiniText.BackgroundTransparency = 1
+MiniText.TextColor3 = Color3.fromRGB(255, 255, 255)
+MiniText.Font = Enum.Font.SourceSansBold
+MiniText.TextSize = 16
+MiniText.Visible = false
+MiniText.Parent = MainFrame
+
+local RestoreButton = Instance.new("TextButton")
+RestoreButton.Text = "▲"
+RestoreButton.Size = UDim2.new(0, 30, 0, 30)
+RestoreButton.Position = UDim2.new(1, -35, 0, 5)
+RestoreButton.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
+RestoreButton.BorderSizePixel = 2
+RestoreButton.BorderColor3 = Color3.fromRGB(255, 255, 255)
+RestoreButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+RestoreButton.Visible = false
+RestoreButton.Parent = MainFrame
+
+-- STATE
+local isFloating = false
+local isMinimized = false
+
+local normalSize = UDim2.new(0, 250, 0, 170)
+local normalPos = UDim2.new(0.5, -125, 0.5, -85)
+
+local minimizedSize = UDim2.new(0, 120, 0, 40)
+local minimizedPos = UDim2.new(1, -130, 0.5, -20)
+
+local floatingSize = UDim2.new(0, 120, 0, 40)
+local floatingPos = UDim2.new(1, -130, 0.5, 40) -- sedikit turun dari minimize
+
+-- FUNCTION BALIK NORMAL
+local function expandToNormal()
+    isFloating = false
+    isMinimized = false
+    MainFrame:TweenSize(normalSize, "Out", "Quad", 0.4, true)
+    MainFrame:TweenPosition(normalPos, "Out", "Quad", 0.4, true)
+
+    Title.Visible = true
+    CheatButton.Visible = true
+    SummitButton.Visible = true
+    MinimizeButton.Visible = true
+    MiniText.Visible = false
+    RestoreButton.Visible = false
+end
+
+-- FUNCTION FLOATING
+local function shrinkToFloating()
+    isFloating = true
+    isMinimized = false
+    MainFrame:TweenSize(floatingSize, "Out", "Quad", 0.4, true)
+    MainFrame:TweenPosition(floatingPos, "Out", "Quad", 0.4, true)
+
+    Title.Visible = false
+    CheatButton.Visible = false
+    SummitButton.Visible = false
+    MinimizeButton.Visible = false
+    MiniText.Visible = true
+    RestoreButton.Visible = true
+    MiniText.Text = "Floating"
+end
+
+-- TOMBOL MINIMIZE
+MinimizeButton.MouseButton1Click:Connect(function()
+    if not isMinimized then
+        isMinimized = true
+        isFloating = false
+        MainFrame:TweenSize(minimizedSize, "Out", "Quad", 0.3, true)
+        MainFrame:TweenPosition(minimizedPos, "Out", "Quad", 0.3, true)
+
+        Title.Visible = false
+        CheatButton.Visible = false
+        SummitButton.Visible = false
+        MinimizeButton.Visible = false
+        MiniText.Visible = true
+        RestoreButton.Visible = true
+        MiniText.Text = "JSY"
+    end
+end)
+
+-- TOMBOL RESTORE
+RestoreButton.MouseButton1Click:Connect(function()
+    expandToNormal()
+end)
+
+-- TOMBOL CHEAT
+CheatButton.MouseButton1Click:Connect(function()
+    shrinkToFloating()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/Biontoken/Map-gunung/refs/heads/main/final%20gui.txt"))()
+end)
+
+-- TOMBOL SUMMIT
+SummitButton.MouseButton1Click:Connect(function()
+    shrinkToFloating()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/Biontoken/Map-gunung/refs/heads/main/summit%20final.txt"))()
+end)
