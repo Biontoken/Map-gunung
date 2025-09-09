@@ -61,11 +61,24 @@ TitleLabel.TextColor3 = Color3.fromRGB(255,255,255)
 TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 TitleLabel.Parent = Navbar
 
+-- Tombol Minimize
+local MinimizeBtn = Instance.new("TextButton")
+MinimizeBtn.Size = UDim2.new(0,35,0,35)
+MinimizeBtn.Position = UDim2.new(1,-85,0.5,-17) -- di sebelah kiri tombol X
+MinimizeBtn.BackgroundColor3 = Color3.fromRGB(255,255,255)
+MinimizeBtn.Text = "-"
+MinimizeBtn.Font = Enum.Font.GothamBold
+MinimizeBtn.TextSize = 20
+MinimizeBtn.TextColor3 = Color3.fromRGB(0,0,0)
+MinimizeBtn.Parent = Navbar
+Instance.new("UICorner",MinimizeBtn).CornerRadius = UDim.new(1,0)
+
+
 -- X Button
 local CloseBtn = Instance.new("TextButton")
 CloseBtn.Size = UDim2.new(0,35,0,35)
 CloseBtn.Position = UDim2.new(1,-45,0.5,-17)
-CloseBtn.BackgroundColor3 = Color3.fromRGB(20,20,20)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(240,8,8)
 CloseBtn.Text = "X"
 CloseBtn.Font = Enum.Font.GothamBold
 CloseBtn.TextSize = 20
@@ -97,13 +110,12 @@ end)
 local MiniFrame = Instance.new("TextButton")
 MiniFrame.Size = UDim2.new(0,60,0,30)
 MiniFrame.Position = UDim2.new(1,-80,0,10) -- pojok kanan atas
-MiniFrame.BackgroundColor3 = Color3.fromRGB(0,0,0)
+MiniFrame.BackgroundColor3 = Color3.fromRGB(255,255,255)
 MiniFrame.Text = "JSY"
 MiniFrame.Font = Enum.Font.GothamBlack
 MiniFrame.TextSize = 18
-MiniFrame.TextColor3 = Color3.fromRGB(255,255,255)
+MiniFrame.TextColor3 = Color3.fromRGB(0,0,0)
 MiniFrame.TextStrokeTransparency = 0.3
-MiniFrame.TextStrokeColor3 = Color3.fromRGB(150,0,200)
 MiniFrame.Visible = false
 MiniFrame.Active = true
 MiniFrame.Draggable = true
@@ -123,6 +135,10 @@ gradient.Parent = MiniFrame
 
 -- Logika close & reopen
 CloseBtn.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+end)
+
+MinimizeBtn.MouseButton1Click:Connect(function()
     MainFrame.Visible = false
     MiniFrame.Visible = true
 end)
@@ -132,6 +148,7 @@ MiniFrame.MouseButton1Click:Connect(function()
     MiniFrame.Visible = false
 end)
 
+
 ---------------------------------------------------
 -- Semua tombol dan fitur masih sama kayak sebelumnya
 ---------------------------------------------------
@@ -140,11 +157,11 @@ end)
 local function createButton(icon,text,url)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(0, 160, 0, 32)
-    btn.BackgroundColor3 = Color3.fromRGB(10,10,10)
+    btn.BackgroundColor3 = Color3.fromRGB(255,255,255)
     btn.Text = icon.."  "..text
     btn.TextSize = 14
     btn.Font = Enum.Font.GothamBlack
-    btn.TextColor3 = Color3.fromRGB(255,255,255)
+    btn.TextColor3 = Color3.fromRGB(0,0,0)
     btn.TextXAlignment = Enum.TextXAlignment.Center
     Instance.new("UICorner",btn).CornerRadius = UDim.new(0,10)
 
@@ -152,7 +169,7 @@ local function createButton(icon,text,url)
         TweenService:Create(btn,TweenInfo.new(0.2),{BackgroundColor3=Color3.fromRGB(50,0,130)}):Play()
     end)
     btn.MouseLeave:Connect(function()
-        TweenService:Create(btn,TweenInfo.new(0.2),{BackgroundColor3=Color3.fromRGB(10,10,10)}):Play()
+        TweenService:Create(btn,TweenInfo.new(0.2),{BackgroundColor3=Color3.fromRGB(255,255,255)}):Play()
     end)
 
     btn.MouseButton1Click:Connect(function()
@@ -183,11 +200,11 @@ local Player = game.Players.LocalPlayer
 -- Tombol Lampu Kepala
 local LampBtn = Instance.new("TextButton")
 LampBtn.Size = UDim2.new(0,160,0,32)
-LampBtn.BackgroundColor3 = Color3.fromRGB(10,10,10)
+LampBtn.BackgroundColor3 = Color3.fromRGB(255,255,255)
 LampBtn.Text = "Lampu"
 LampBtn.Font = Enum.Font.GothamBlack
 LampBtn.TextSize = 14
-LampBtn.TextColor3 = Color3.fromRGB(255,255,255)
+LampBtn.TextColor3 = Color3.fromRGB(0,0,0)
 Instance.new("UICorner", LampBtn).CornerRadius = UDim.new(0,10)
 LampBtn.Parent = ScrollFrame
 
@@ -240,7 +257,7 @@ LampBtn.MouseButton1Click:Connect(function()
         LampBtn.BackgroundColor3 = Color3.fromRGB(150,0,200)
     else
         removeHeadLamp()
-        LampBtn.BackgroundColor3 = Color3.fromRGB(10,10,10)
+        LampBtn.BackgroundColor3 = Color3.fromRGB(255,255,255)
     end
 end)
 
@@ -258,11 +275,11 @@ local Player = game.Players.LocalPlayer
 -- GUI utama (tombol untuk memunculkan / menghapus item speed)
 local MainBtn = Instance.new("TextButton")
 MainBtn.Size = UDim2.new(0,160,0,32)
-MainBtn.BackgroundColor3 = Color3.fromRGB(10,10,10)
+MainBtn.BackgroundColor3 = Color3.fromRGB(255,255,255)
 MainBtn.Text = "Speed"
 MainBtn.Font = Enum.Font.GothamBlack
 MainBtn.TextSize = 14
-MainBtn.TextColor3 = Color3.fromRGB(255,255,255)
+MainBtn.TextColor3 = Color3.fromRGB(0,0,0)
 Instance.new("UICorner", MainBtn).CornerRadius = UDim.new(0,10)
 MainBtn.Parent = ScrollFrame
 
@@ -307,7 +324,7 @@ local function addSelendang(char)
     selendangPart = Instance.new("Part")
     selendangPart.Name = "SelendangPart"
     selendangPart.Size = Vector3.new(0.5,0.5,0.5)
-    selendangPart.Transparency = 1
+    selendangPart.Transparency = 3
     selendangPart.Anchored = false
     selendangPart.CanCollide = false
     selendangPart.CFrame = torso.CFrame
@@ -443,7 +460,7 @@ MainBtn.MouseButton1Click:Connect(function()
         itemVisible = true
     else
         destroySpeedItem()
-        MainBtn.BackgroundColor3 = Color3.fromRGB(10,10,10)
+        MainBtn.BackgroundColor3 = Color3.fromRGB(255,255,255)
         MainBtn.Text = "Dapatkan Speed"
         itemVisible = false
     end
@@ -453,11 +470,11 @@ end)
 -- ðŸ”¹ Fling
 local FlingBtn = Instance.new("TextButton")
 FlingBtn.Size = UDim2.new(0,160,0,32)
-FlingBtn.BackgroundColor3 = Color3.fromRGB(10,10,10)
+FlingBtn.BackgroundColor3 = Color3.fromRGB(255,255,255)
 FlingBtn.Text = "TENDANG OFF"
 FlingBtn.Font = Enum.Font.GothamBlack
 FlingBtn.TextSize = 14
-FlingBtn.TextColor3 = Color3.fromRGB(255,255,255)
+FlingBtn.TextColor3 = Color3.fromRGB(0,0,0)
 Instance.new("UICorner", FlingBtn).CornerRadius = UDim.new(0,10)
 FlingBtn.Parent = ScrollFrame
 
@@ -489,6 +506,6 @@ FlingBtn.MouseButton1Click:Connect(function()
         coroutine.resume(flingThread)
     else
         FlingBtn.Text = "TENDANG OFF"
-        FlingBtn.BackgroundColor3 = Color3.fromRGB(10,10,10)
+        FlingBtn.BackgroundColor3 = Color3.fromRGB(255,255,255)
     end
 end)
