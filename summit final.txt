@@ -181,6 +181,7 @@ Vector3.new(1252.80, 825.45, 395.37),
 Vector3.new(1511.07, 1193.36, 18.07),
 Vector3.new(1000.93, 1193.21, -57.81),
 Vector3.new(-1498.29, 1872.70, -19.60),
+Vector3.new(-1367.72, 1883.21, -186.67),
 },
 }
 --  STATE
@@ -642,6 +643,7 @@ closeBtn.MouseButton1Click:Connect(function()
     runToken = runToken + 1
     screenGui:Destroy()
 end)
+
 
 
 
