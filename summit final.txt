@@ -173,7 +173,7 @@ Vector3.new(63.89, 581.07, 4122.36),
 local settingsState = {
     respawn = false,
     repeatTp = false,
-    delay = 2
+    delay = 5
 }
 
 local activeScript = nil
@@ -627,6 +627,7 @@ closeBtn.MouseButton1Click:Connect(function()
     runToken = runToken + 1
     screenGui:Destroy()
 end)
+
 
 
 
