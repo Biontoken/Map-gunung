@@ -518,7 +518,7 @@ local function createControls(name)
         v = tonumber(v)
         if not v then return settingsState.delay end
         if v < 0.01 then v = 0.01 end
-        if v > 30 then v = 30 end
+        if v > 1000 then v = 1000 end
         return v
     end
     speedBox.FocusLost:Connect(function()
@@ -643,6 +643,7 @@ closeBtn.MouseButton1Click:Connect(function()
     runToken = runToken + 1
     screenGui:Destroy()
 end)
+
 
 
 
