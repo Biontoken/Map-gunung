@@ -149,6 +149,7 @@ Vector3.new(287.24, 430.50, 505.24),
 Vector3.new(335.25, 491.50, 348.57),
 Vector3.new(213.24, 315.50, -146.14),
 Vector3.new(-609.58, 906.24, -535.39),
+Vector3.new(-675.31, 908.67, -483.22),
 },
 ["Ckptw"] = {
 Vector3.new(510.99, 160.87, -530.53),
@@ -643,6 +644,7 @@ closeBtn.MouseButton1Click:Connect(function()
     runToken = runToken + 1
     screenGui:Destroy()
 end)
+
 
 
 
