@@ -15,7 +15,7 @@ MainFrame.Parent = ScreenGui
 
 -- JUDUL
 local Title = Instance.new("TextLabel")
-Title.Text = "JSY"
+Title.Text = "JSY MENU"
 Title.Size = UDim2.new(1, 0, 0, 30)
 Title.BackgroundTransparency = 1
 Title.TextColor3 = Color3.fromRGB(255, 255, 255)
@@ -44,6 +44,17 @@ SummitButton.BorderSizePixel = 2
 SummitButton.BorderColor3 = Color3.fromRGB(255, 255, 255)
 SummitButton.TextColor3 = Color3.fromRGB(255, 255, 255)
 SummitButton.Parent = MainFrame
+
+-- LABEL UPDATE
+local UpdateNote = Instance.new("TextLabel")
+UpdateNote.Text = "broadcast 🔊 : update mt batu"
+UpdateNote.Size = UDim2.new(1, 0, 0, 20)
+UpdateNote.Position = UDim2.new(0, 0, 0, 135) -- di bawah Summit
+UpdateNote.BackgroundTransparency = 1
+UpdateNote.TextColor3 = Color3.fromRGB(255, 255, 255)
+UpdateNote.Font = Enum.Font.SourceSansBold
+UpdateNote.TextSize = 14
+UpdateNote.Parent = MainFrame
 
 -- TOMBOL MINIMIZE
 local MinimizeButton = Instance.new("TextButton")
@@ -89,7 +100,7 @@ local minimizedSize = UDim2.new(0, 120, 0, 40)
 local minimizedPos = UDim2.new(1, -130, 0.5, -20)
 
 local floatingSize = UDim2.new(0, 120, 0, 40)
-local floatingPos = UDim2.new(1, -130, 0.5, -20) -- sedikit turun dari minimize
+local floatingPos = UDim2.new(1, -130, 0.5, -20)
 
 -- FUNCTION BALIK NORMAL
 local function expandToNormal()
@@ -101,6 +112,7 @@ local function expandToNormal()
     Title.Visible = true
     CheatButton.Visible = true
     SummitButton.Visible = true
+    UpdateNote.Visible = true
     MinimizeButton.Visible = true
     MiniText.Visible = false
     RestoreButton.Visible = false
@@ -116,6 +128,7 @@ local function shrinkToFloating()
     Title.Visible = false
     CheatButton.Visible = false
     SummitButton.Visible = false
+    UpdateNote.Visible = false
     MinimizeButton.Visible = false
     MiniText.Visible = true
     RestoreButton.Visible = true
@@ -133,6 +146,7 @@ MinimizeButton.MouseButton1Click:Connect(function()
         Title.Visible = false
         CheatButton.Visible = false
         SummitButton.Visible = false
+        UpdateNote.Visible = false
         MinimizeButton.Visible = false
         MiniText.Visible = true
         RestoreButton.Visible = true
@@ -156,5 +170,3 @@ SummitButton.MouseButton1Click:Connect(function()
     shrinkToFloating()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/Biontoken/Map-gunung/refs/heads/main/summit%20final.txt"))()
 end)
-
-
