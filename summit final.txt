@@ -184,13 +184,26 @@ Vector3.new(1000.93, 1193.21, -57.81),
 Vector3.new(-1498.29, 1872.70, -19.60),
 Vector3.new(-1367.72, 1883.21, -186.67),
 },
+["Batu"] = {
+Vector3.new(-122.98, 8.77, 543.66),
+Vector3.new(-39.97, 392.82, 673.40),
+Vector3.new(-296.72, 484.82, 778.62),
+Vector3.new(15.38, 572.62, 663.08),
+Vector3.new(587.08, 916.82, 637.25),
+Vector3.new(282.91, 1196.82, 180.55),
+Vector3.new(552.35, 1528.82, -582.88),
+Vector3.new(332.64, 1736.82, -259.89),
+Vector3.new(289.71, 1979.42, -203.55),
+Vector3.new(613.23, 3260.82, -71.04),
+Vector3.new(334.64, 3244.61, -31.39),
+},
 }
 --  STATE
 -- =========================
 local settingsState = {
     respawn = false,
     repeatTp = false,
-    delay = 5
+    delay = 30
 }
 
 local activeScript = nil
@@ -578,7 +591,7 @@ local function addScriptButton(name)
 end
 
 -- Generate buttons
-local mapOrder = {"Daun", "Arunika", "Lembayana", "Atin", "Sibuatan", "Galunggung", "Akhirat", "Yahayuk", "Ckptw", "Mirage", "Hell",}
+local mapOrder = {"Daun", "Arunika", "Lembayana", "Atin", "Sibuatan", "Galunggung", "Akhirat", "Yahayuk", "Ckptw", "Mirage", "Hell", "Batu",}
 for _, name in ipairs(mapOrder) do
     if coordinates[name] then
         addScriptButton(name)
@@ -644,6 +657,7 @@ closeBtn.MouseButton1Click:Connect(function()
     runToken = runToken + 1
     screenGui:Destroy()
 end)
+
 
 
 
