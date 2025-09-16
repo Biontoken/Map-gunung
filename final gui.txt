@@ -189,12 +189,11 @@ end
 
 -- Tombol Script
 createButton("","spectator","https://pastefy.app/uzM8fN4Q/raw")
-createButton("","fly & rayap besi","https://pastefy.app/bIjtwpOB/raw")
 createButton("","double jump","https://raw.githubusercontent.com/Biontoken/Map-gunung/refs/heads/main/doublejump.txt")
 createButton("","jalan udara","https://raw.githubusercontent.com/Biontoken/Map-gunung/refs/heads/main/Airwalk.txt")
-createButton("","REC","https://raw.githubusercontent.com/Biontoken/Map-gunung/refs/heads/main/rec.txt")
+createButton("","rec","https://raw.githubusercontent.com/Biontoken/Map-gunung/refs/heads/main/rec.txt")
 
--- ðŸ’¡ Lampu Kepala Putih
+-- Lampu Kepala Putih
 local Player = game.Players.LocalPlayer
 
 -- Tombol Lampu Kepala
@@ -471,7 +470,7 @@ end)
 local FlingBtn = Instance.new("TextButton")
 FlingBtn.Size = UDim2.new(0,160,0,32)
 FlingBtn.BackgroundColor3 = Color3.fromRGB(255,255,255)
-FlingBtn.Text = "TENDANG OFF"
+FlingBtn.Text = "tendang"
 FlingBtn.Font = Enum.Font.GothamBlack
 FlingBtn.TextSize = 14
 FlingBtn.TextColor3 = Color3.fromRGB(0,0,0)
@@ -500,12 +499,189 @@ end
 FlingBtn.MouseButton1Click:Connect(function()
     hiddenfling = not hiddenfling
     if hiddenfling then
-        FlingBtn.Text = "TENDANG ON"
+        FlingBtn.Text = "tendang"
         FlingBtn.BackgroundColor3 = Color3.fromRGB(150,0,200)
         flingThread = coroutine.create(fling)
         coroutine.resume(flingThread)
     else
-        FlingBtn.Text = "TENDANG OFF"
+        FlingBtn.Text = "tendang"
         FlingBtn.BackgroundColor3 = Color3.fromRGB(255,255,255)
     end
+end)
+
+
+-- =================== Fly Final Dengan Animasi ===================
+local flying = false
+local flySpeed = 100
+local pressed = {Up=false,Down=false,Left=false,Right=false}
+local bv, bg
+
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+local root = character:WaitForChild("HumanoidRootPart")
+local runService = game:GetService("RunService")
+
+-- =================== Animasi ===================
+local animations = {
+    Idle = 1234567890,     -- ganti ID animasi Idle
+    Fly = 3337994105,      -- ganti ID animasi Fly
+}
+
+local animTracks = {}
+local animator
+
+local function setupAnimator(hum)
+    animator = hum:FindFirstChildOfClass("Animator")
+    if not animator then
+        animator = Instance.new("Animator")
+        animator.Parent = hum
+    end
+
+    animTracks = {}
+    for name,id in pairs(animations) do
+        if id ~= 0 then
+            local anim = Instance.new("Animation")
+            anim.AnimationId = "rbxassetid://"..id
+            local track = animator:LoadAnimation(anim)
+            track.Priority = Enum.AnimationPriority.Action
+            track.Looped = true
+            track:AdjustSpeed(1)
+            animTracks[name] = track
+        end
+    end
+
+    if animTracks.Idle then
+        animTracks.Idle:Play()
+    end
+end
+
+setupAnimator(humanoid)
+
+-- =================== DPad ===================
+local gui = Instance.new("ScreenGui")
+gui.Name = "FlyGui"
+gui.Parent = game:GetService("CoreGui")
+
+local DPad = Instance.new("Frame")
+DPad.Size = UDim2.new(0,150,0,150)
+DPad.Position = UDim2.new(0,20,1,-180)
+DPad.BackgroundTransparency = 1
+DPad.Visible = false
+DPad.Parent = gui
+
+local function createButton(name,pos)
+    local btn = Instance.new("TextButton")
+    btn.Name = name
+    btn.Size = UDim2.new(0,50,0,50)
+    btn.Position = pos
+    btn.BackgroundColor3 = Color3.fromRGB(0,0,0)
+    btn.BackgroundTransparency = 0.5
+    btn.TextColor3 = Color3.fromRGB(255,255,255)
+    btn.Font = Enum.Font.GothamBold
+    btn.Text = name
+    btn.TextSize = 30
+    btn.Parent = DPad
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0,10)
+    return btn
+end
+
+local UpBtn = createButton("↑", UDim2.new(0.5,-25,0,0))
+local DownBtn = createButton("↓", UDim2.new(0.5,-25,1,-50))
+local LeftBtn = createButton("←", UDim2.new(0,0,0.5,-25))
+local RightBtn = createButton("→", UDim2.new(1,-50,0.5,-25))
+
+local function setupButton(btn,key)
+    btn.MouseButton1Down:Connect(function() pressed[key]=true end)
+    btn.MouseButton1Up:Connect(function() pressed[key]=false end)
+end
+setupButton(UpBtn,"Up")
+setupButton(DownBtn,"Down")
+setupButton(LeftBtn,"Left")
+setupButton(RightBtn,"Right")
+
+-- =================== Tombol Fly di ScrollFrame ===================
+local FlyBtn = Instance.new("TextButton")
+FlyBtn.Size = UDim2.new(0,160,0,32)
+FlyBtn.BackgroundColor3 = Color3.fromRGB(255,255,255)
+FlyBtn.Text = "Fly"
+FlyBtn.Font = Enum.Font.GothamBlack
+FlyBtn.TextSize = 14
+FlyBtn.TextColor3 = Color3.fromRGB(0,0,0)
+Instance.new("UICorner", FlyBtn).CornerRadius = UDim.new(0,10)
+FlyBtn.Parent = ScrollFrame
+
+-- =================== Fungsi Matikan Fly ===================
+local function disableFly()
+    flying = false
+    DPad.Visible = false
+    FlyBtn.Text = "Fly"
+    FlyBtn.BackgroundColor3 = Color3.fromRGB(255,255,255)
+    if bv then bv:Destroy() bv=nil end
+    if bg then bg:Destroy() bg=nil end
+    if animTracks.Fly and animTracks.Fly.IsPlaying then animTracks.Fly:Stop() end
+    if animTracks.Idle and not animTracks.Idle.IsPlaying then animTracks.Idle:Play() end
+end
+
+-- =================== Toggle Fly ===================
+FlyBtn.MouseButton1Click:Connect(function()
+    if flying then
+        disableFly()
+    else
+        flying = true
+        DPad.Visible = true
+        FlyBtn.Text = "Fly"
+        FlyBtn.BackgroundColor3 = Color3.fromRGB(150,0,200)
+
+        if animTracks.Idle and animTracks.Idle.IsPlaying then
+            animTracks.Idle:Stop()
+        end
+        if animTracks.Fly and not animTracks.Fly.IsPlaying then
+            animTracks.Fly:Play()
+        end
+    end
+end)
+
+-- =================== Fly Movement ===================
+runService.RenderStepped:Connect(function()
+    if flying then
+        if not bv then
+            bv = Instance.new("BodyVelocity")
+            bv.MaxForce = Vector3.new(1e5,1e5,1e5)
+            bv.Velocity = Vector3.zero
+            bv.Parent = root
+        end
+        if not bg then
+            bg = Instance.new("BodyGyro")
+            bg.MaxTorque = Vector3.new(1e5,1e5,1e5)
+            bg.CFrame = root.CFrame
+            bg.Parent = root
+        end
+
+        local cam = workspace.CurrentCamera.CFrame
+        local moveDir = Vector3.zero
+        if pressed.Up then moveDir = moveDir + cam.LookVector end
+        if pressed.Down then moveDir = moveDir - cam.LookVector end
+        if pressed.Left then moveDir = moveDir - cam.RightVector end
+        if pressed.Right then moveDir = moveDir + cam.RightVector end
+
+        if moveDir.Magnitude > 0 then moveDir = moveDir.Unit end
+        bv.Velocity = moveDir * flySpeed
+
+        local lookVec = Vector3.new(bv.Velocity.X,0,bv.Velocity.Z)
+        if lookVec.Magnitude == 0 then
+            lookVec = Vector3.new(cam.LookVector.X,0,cam.LookVector.Z)
+        end
+        bg.CFrame = CFrame.new(root.Position, root.Position + lookVec)
+    end
+end)
+
+-- =================== Reset Saat Mati ===================
+humanoid.Died:Connect(disableFly)
+player.CharacterAdded:Connect(function(char)
+    character = char
+    humanoid = char:WaitForChild("Humanoid")
+    root = char:WaitForChild("HumanoidRootPart")
+    setupAnimator(humanoid)
+    humanoid.Died:Connect(disableFly)
 end)
