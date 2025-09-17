@@ -47,7 +47,7 @@ SummitButton.Parent = MainFrame
 
 -- LABEL UPDATE
 local UpdateNote = Instance.new("TextLabel")
-UpdateNote.Text = "broadcast 🔊 : rayap besi sudah di hapus"
+UpdateNote.Text = "broadcast 🔊 :update cek bagian spectator"
 UpdateNote.Size = UDim2.new(1, 0, 0, 20)
 UpdateNote.Position = UDim2.new(0, 0, 0, 135) -- di bawah Summit
 UpdateNote.BackgroundTransparency = 1
@@ -170,4 +170,5 @@ SummitButton.MouseButton1Click:Connect(function()
     shrinkToFloating()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/Biontoken/Map-gunung/refs/heads/main/summit%20final.txt"))()
 end)
+
 
