@@ -143,13 +143,13 @@ Vector3.new(3456.99, 7710.24, 935.25),
 Vector3.new(3038.18, 7878.24, 1040.68),
 },
 ["Yahayuk"] = {
-Vector3.new(-418.51, 249.87, 767.73),
-Vector3.new(-348.52, 389.50, 523.04),
-Vector3.new(287.24, 430.50, 505.24),
-Vector3.new(335.25, 491.50, 348.57),
-Vector3.new(213.24, 315.50, -146.14),
-Vector3.new(-609.58, 906.24, -535.39),
-Vector3.new(-675.31, 908.67, -483.22),
+Vector3.new(-429.16, 249.26, 787.50),
+Vector3.new(-368.67, 388.26, 533.12),
+Vector3.new(295.57, 430.73, 497.84),
+Vector3.new(327.00, 490.26, 364.82),
+Vector3.new(217.31, 314.26, -144.15),
+Vector3.new(-613.47, 905.00, -542.23),
+Vector3.new(-641.10, 912.11, -504.28),
 },
 ["Ckptw"] = {
 Vector3.new(510.99, 160.87, -530.53),
@@ -657,6 +657,7 @@ closeBtn.MouseButton1Click:Connect(function()
     runToken = runToken + 1
     screenGui:Destroy()
 end)
+
 
 
 
