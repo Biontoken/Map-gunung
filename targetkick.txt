@@ -1,0 +1,279 @@
+local Players = game:GetService("Players")
+local LP = Players.LocalPlayer
+local Cam = workspace.CurrentCamera
+local RunService = game:GetService("RunService")
+
+local Active = true
+local RenderConnection
+local FlingActive = false
+local FlingThread
+
+-- === GUI Screen ===
+local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+ScreenGui.Name = "SpectateGUI"
+
+-- Fungsi styling tombol
+local function styleButton(btn, text, bgColor)
+    btn.Size = UDim2.new(0,80,0,40)
+    btn.BackgroundColor3 = bgColor
+    btn.BorderSizePixel = 0
+    btn.TextColor3 = Color3.new(1,1,1)
+    btn.Font = Enum.Font.Gotham
+    btn.TextSize = 22
+    btn.Text = text
+    btn.AutoButtonColor = true
+    local corner = Instance.new("UICorner", btn)
+    corner.CornerRadius = UDim.new(0, 15)
+
+    -- highlight on hover tanpa reset warna aktif
+    btn.MouseEnter:Connect(function()
+        btn.BackgroundColor3 = btn.BackgroundColor3:lerp(Color3.fromRGB(255,255,255),0.2)
+    end)
+    btn.MouseLeave:Connect(function()
+        -- tidak reset ke bgColor lama
+        -- biarkan warna tombol tetap sesuai status
+    end)
+end
+
+-- === Tombol TELEPORT, FLING, X ===
+local FrameTopRight = Instance.new("Frame", ScreenGui)
+FrameTopRight.Size = UDim2.new(0,270,0,50)
+FrameTopRight.Position = UDim2.new(1, -280, 0.2, 10)
+FrameTopRight.BackgroundTransparency = 1
+FrameTopRight.Active = true
+
+local TeleportBtn = Instance.new("TextButton", FrameTopRight)
+TeleportBtn.Position = UDim2.new(0,0,0,0)
+styleButton(TeleportBtn,"TELE",Color3.fromRGB(0,170,255))
+
+local FlingBtn = Instance.new("TextButton", FrameTopRight)
+FlingBtn.Position = UDim2.new(0,90,0,0)
+styleButton(FlingBtn,"KICK",Color3.fromRGB(255,170,0))
+
+local CloseBtn = Instance.new("TextButton", FrameTopRight)
+CloseBtn.Position = UDim2.new(0,180,0,0)
+styleButton(CloseBtn,"X",Color3.fromRGB(255,70,70))
+
+-- === Tombol < RESET > > di bawah ===
+local FrameBottom = Instance.new("Frame", ScreenGui)
+FrameBottom.Size = UDim2.new(0,300,0,50)
+FrameBottom.Position = UDim2.new(0.5, -150, 0.85, 0)
+FrameBottom.BackgroundTransparency = 1
+FrameBottom.Active = true
+
+local PrevBtn = Instance.new("TextButton", FrameBottom)
+PrevBtn.Position = UDim2.new(0,10,0,0)
+styleButton(PrevBtn,"<",Color3.fromRGB(120,120,255))
+
+local ResetBtn = Instance.new("TextButton", FrameBottom)
+ResetBtn.Position = UDim2.new(0,110,0,0)
+styleButton(ResetBtn,"RESET",Color3.fromRGB(50,220,100))
+
+local NextBtn = Instance.new("TextButton", FrameBottom)
+NextBtn.Position = UDim2.new(0,210,0,0)
+styleButton(NextBtn,">",Color3.fromRGB(120,120,255))
+
+-- === Frame Profil Player ===
+local FrameProfile = Instance.new("Frame", ScreenGui)
+FrameProfile.Size = UDim2.new(0, 250, 0, 60)
+FrameProfile.Position = UDim2.new(0.99, -250, 0.0, 0)
+FrameProfile.BackgroundColor3 = Color3.fromRGB(0,0,0)
+FrameProfile.BackgroundTransparency = 0.3
+FrameProfile.BorderSizePixel = 0
+local ProfileCorner = Instance.new("UICorner", FrameProfile)
+ProfileCorner.CornerRadius = UDim.new(0,15)
+local ProfileBorder = Instance.new("UIStroke", FrameProfile)
+ProfileBorder.Color = Color3.fromRGB(255,255,255)
+ProfileBorder.Thickness = 2
+ProfileBorder.Transparency = 0
+
+local AvatarImg = Instance.new("ImageLabel", FrameProfile)
+AvatarImg.Size = UDim2.new(0,50,0,50)
+AvatarImg.Position = UDim2.new(0,5,0,5)
+AvatarImg.BackgroundTransparency = 1
+AvatarImg.ScaleType = Enum.ScaleType.Fit
+local AvatarCorner = Instance.new("UICorner", AvatarImg)
+AvatarCorner.CornerRadius = UDim.new(0,12)
+
+local UsernameLabel = Instance.new("TextLabel", FrameProfile)
+UsernameLabel.Size = UDim2.new(1, -65, 0.5, 0)
+UsernameLabel.Position = UDim2.new(0,60,0,0)
+UsernameLabel.BackgroundTransparency = 1
+UsernameLabel.TextColor3 = Color3.new(1,1,1)
+UsernameLabel.Font = Enum.Font.GothamBold
+UsernameLabel.TextSize = 18
+UsernameLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local AgeLabel = Instance.new("TextLabel", FrameProfile)
+AgeLabel.Size = UDim2.new(1, -65, 0.5, 0)
+AgeLabel.Position = UDim2.new(0,60,0.5,0)
+AgeLabel.BackgroundTransparency = 1
+AgeLabel.TextColor3 = Color3.fromRGB(180,180,180)
+AgeLabel.Font = Enum.Font.Gotham
+AgeLabel.TextSize = 14
+AgeLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+local function updateProfile(player)
+    if player then
+        UsernameLabel.Text = "Username: "..player.Name
+        AgeLabel.Text = "Account Age: "..player.AccountAge.." days"
+        AvatarImg.Image = "https://www.roblox.com/headshot-thumbnail/image?userId="..player.UserId.."&width=150&height=150&format=png"
+    else
+        UsernameLabel.Text = "No Target"
+        AgeLabel.Text = ""
+        AvatarImg.Image = ""
+    end
+end
+
+-- === State ===
+local TargetList = {}
+local CurrentIndex = 0
+local CurrentTarget = nil
+
+local function getTargetablePlayers()
+    local list = {}
+    for _,p in pairs(Players:GetPlayers()) do
+        if p ~= LP and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+            table.insert(list, p)
+        end
+    end
+    return list
+end
+
+-- Tombol navigasi
+local function spectate(index)
+    if not Active then return end
+    TargetList = getTargetablePlayers()
+    if #TargetList == 0 then
+        CurrentTarget = nil
+        CurrentIndex = 0
+        updateProfile(nil)
+        return
+    end
+    if index < 1 then index = #TargetList end
+    if index > #TargetList then index = 1 end
+    CurrentIndex = index
+    CurrentTarget = TargetList[CurrentIndex]
+
+    local char = CurrentTarget.Character
+    if char then
+        local hrp = char:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            updateProfile(CurrentTarget)
+        end
+    end
+end
+
+PrevBtn.MouseButton1Click:Connect(function()
+    spectate(CurrentIndex - 1)
+end)
+NextBtn.MouseButton1Click:Connect(function()
+    spectate(CurrentIndex + 1)
+end)
+
+ResetBtn.MouseButton1Click:Connect(function()
+    -- reset navigasi tapi jangan set camera ke kita
+    TargetList = getTargetablePlayers()
+    if #TargetList > 0 then
+        spectate(1)
+    else
+        CurrentTarget = nil
+        CurrentIndex = 0
+        updateProfile(nil)
+    end
+end)
+
+TeleportBtn.MouseButton1Click:Connect(function()
+    if not Active or not CurrentTarget then return end
+    local lpHRP = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+    local targetHRP = CurrentTarget.Character and CurrentTarget.Character:FindFirstChild("HumanoidRootPart")
+    if lpHRP and targetHRP then
+        lpHRP.CFrame = targetHRP.CFrame + Vector3.new(0,3,0)
+    end
+end)
+
+-- === Fling permanen (normal + hidden) ===
+local function combinedFling()
+    local lp = LP
+    while FlingActive do
+        RunService.Heartbeat:Wait()
+        local lpHRP = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
+        local targetHRP = CurrentTarget and CurrentTarget.Character and CurrentTarget.Character:FindFirstChild("HumanoidRootPart")
+        if lpHRP and targetHRP then
+            -- Normal fling ke target
+            local direction = (targetHRP.Position - lpHRP.Position).Unit
+            local speed = 200
+            lpHRP.AssemblyLinearVelocity = direction * speed
+            lpHRP.CFrame = targetHRP.CFrame
+
+            -- Hidden fling / tendang super kuat
+            local vel = lpHRP.Velocity
+            lpHRP.Velocity = vel * 999 + Vector3.new(0,999,0)
+            RunService.RenderStepped:Wait()
+            lpHRP.Velocity = vel
+        end
+    end
+end
+
+-- Tombol FLING (warna berubah sesuai status)
+FlingBtn.MouseButton1Click:Connect(function()
+    if not Active then return end
+    FlingActive = not FlingActive
+
+    -- update warna tombol sesuai status
+    if FlingActive then
+        FlingBtn.BackgroundColor3 = Color3.fromRGB(0,255,0) -- hijau saat aktif
+    else
+        FlingBtn.BackgroundColor3 = Color3.fromRGB(255,170,0) -- oranye saat nonaktif
+        if LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
+            LP.Character.HumanoidRootPart.AssemblyLinearVelocity = Vector3.new(0,0,0)
+        end
+    end
+
+    -- jalankan coroutine fling hanya saat aktif
+    if FlingActive then
+        if not FlingThread or coroutine.status(FlingThread) == "dead" then
+            FlingThread = coroutine.create(combinedFling)
+            coroutine.resume(FlingThread)
+        end
+    end
+end)
+
+-- set warna awal tombol sesuai status
+if FlingActive then
+    FlingBtn.BackgroundColor3 = Color3.fromRGB(0,255,0)
+else
+    FlingBtn.BackgroundColor3 = Color3.fromRGB(255,170,0)
+end
+
+-- Close
+CloseBtn.MouseButton1Click:Connect(function()
+    Active = false
+    CurrentTarget = nil
+    TargetList = {}
+    FlingActive = false
+
+    -- Reset camera ke kita
+    if LP.Character and LP.Character:FindFirstChild("Humanoid") then
+        Cam.CameraSubject = LP.Character:FindFirstChild("Humanoid")
+    end
+
+    ScreenGui:Destroy()
+end)
+
+-- Auto update camera: **tetap follow target walau kita mati**
+RenderConnection = RunService.RenderStepped:Connect(function()
+    if not Active then return end
+    if CurrentTarget and CurrentTarget.Character then
+        local hrp = CurrentTarget.Character:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            Cam.CameraSubject = hrp
+        end
+    end
+end)
+
+-- Inisialisasi
+TargetList = getTargetablePlayers()
+if #TargetList > 0 then
+    spectate(1)
+end
