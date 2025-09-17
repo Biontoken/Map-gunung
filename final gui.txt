@@ -188,7 +188,7 @@ local function createButton(icon,text,url)
 end
 
 -- Tombol Script
-createButton("","spectator","https://pastefy.app/uzM8fN4Q/raw")
+createButton("","spectator","https://raw.githubusercontent.com/Biontoken/Map-gunung/refs/heads/main/targetkick.txt")
 createButton("","double jump","https://raw.githubusercontent.com/Biontoken/Map-gunung/refs/heads/main/doublejump.txt")
 createButton("","jalan udara","https://raw.githubusercontent.com/Biontoken/Map-gunung/refs/heads/main/Airwalk.txt")
 createButton("","rec","https://raw.githubusercontent.com/Biontoken/Map-gunung/refs/heads/main/rec.txt")
@@ -466,7 +466,7 @@ MainBtn.MouseButton1Click:Connect(function()
 end)
 
 
--- ðŸ”¹ Fling
+-- 🔹 Fling
 local FlingBtn = Instance.new("TextButton")
 FlingBtn.Size = UDim2.new(0,160,0,32)
 FlingBtn.BackgroundColor3 = Color3.fromRGB(255,255,255)
@@ -586,10 +586,10 @@ local function createButton(name,pos)
     return btn
 end
 
-local UpBtn = createButton("↑", UDim2.new(0.5,-25,0,0))
-local DownBtn = createButton("↓", UDim2.new(0.5,-25,1,-50))
-local LeftBtn = createButton("←", UDim2.new(0,0,0.5,-25))
-local RightBtn = createButton("→", UDim2.new(1,-50,0.5,-25))
+local UpBtn = createButton("", UDim2.new(0.5,-25,0,0))
+local DownBtn = createButton("", UDim2.new(0.5,-25,1,-50))
+local LeftBtn = createButton("", UDim2.new(0,0,0.5,-25))
+local RightBtn = createButton("", UDim2.new(1,-50,0.5,-25))
 
 local function setupButton(btn,key)
     btn.MouseButton1Down:Connect(function() pressed[key]=true end)
