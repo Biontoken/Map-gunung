@@ -107,15 +107,16 @@ local coordinates = {
     Vector3.new(5414.15, 8094.22, 2289.03),
     },
     ["Galunggung"] = {
-    Vector3.new(-496.38, 112.45, 358.16),
-    Vector3.new(-713.95, 177.03, 413.41),
-    Vector3.new(-926.88, 168.07, 100.32),
-    Vector3.new(-1238.35, 151.36, -55.53),
-    Vector3.new(-1356.93, 166.10, -823.67),
-    Vector3.new(-1315.65, 228.67, -990.76),
-    Vector3.new(-1362.12, 373.88, -1490.94),
-    Vector3.new(-1322.29, 257.91, -2252.74),
-    Vector3.new(-1316.74, 474.24, -3453.50),
+    Vector3.new(464.56, 93.00, 580.97),
+Vector3.new(538.92, 209.00, 343.02),
+Vector3.new(14.18, 185.00, 679.19),
+Vector3.new(-567.69, 441.00, 377.84),
+Vector3.new(-95.99, 713.51, -482.85),
+Vector3.new(-410.65, 888.98, -320.34),
+Vector3.new(-719.08, 1148.82, -1008.31),
+Vector3.new(-496.80, 1329.00, -1381.67),
+Vector3.new(-802.54, 1360.85, -1550.90),
+Vector3.new(-932.93, 1928.72, -3036.70),
     },
 ["Akhirat"] = {
 Vector3.new(-134.86, 421.50, -220.50),
@@ -657,6 +658,7 @@ closeBtn.MouseButton1Click:Connect(function()
     runToken = runToken + 1
     screenGui:Destroy()
 end)
+
 
 
 
