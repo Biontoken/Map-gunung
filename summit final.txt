@@ -106,7 +106,18 @@ local coordinates = {
     Vector3.new(5393.70, 8114.02, 2206.42),
     Vector3.new(5414.15, 8094.22, 2289.03),
     },
-    ["Galunggung"] = {
+    ["MT Galunggung"] = {
+    Vector3.new(-714.09, 175.48, 414.42),
+Vector3.new(-926.69, 166.52, 102.12),
+Vector3.new(-1237.29, 149.82, -54.59),
+Vector3.new(-1356.75, 164.56, -823.67),
+Vector3.new(-1315.19, 227.13, -991.02),
+Vector3.new(-1360.70, 372.37, -1488.29),
+Vector3.new(-1322.85, 256.37, -2252.07),
+Vector3.new(-1240.42, 222.61, -2650.06),
+Vector3.new(-1239.71, 472.34, -3402.04),
+},
+    ["GN Galunggung"] = {
     Vector3.new(464.56, 93.00, 580.97),
 Vector3.new(538.92, 209.00, 343.02),
 Vector3.new(14.18, 185.00, 679.19),
@@ -571,106 +582,4 @@ local function addScriptButton(name)
     btn.BorderSizePixel = 2
     btn.BorderColor3 = Color3.fromRGB(255,255,255)
 
-    btn.MouseEnter:Connect(function()
-        TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(60, 60, 60)}):Play()
-    end)
-    btn.MouseLeave:Connect(function()
-        TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(0, 0, 0)}):Play()
-    end)
-
-    btn.MouseButton1Click:Connect(function()
-        if playState then
-            playState = false
-            runToken = runToken + 1
-        end
-        for _, frame in pairs(controls) do
-            frame.Visible = false
-        end
-        controls[name].Visible = true
-        activeScript = name
-    end)
-end
-
--- Generate buttons
-local mapOrder = {"Daun", "Arunika", "Lembayana", "Atin", "Sibuatan", "Galunggung", "Akhirat", "Yahayuk", "Ckptw", "Mirage", "Hell", "Batu",}
-for _, name in ipairs(mapOrder) do
-    if coordinates[name] then
-        addScriptButton(name)
-    end
-end
-
--- pilih map pertama
-if mapOrder[1] and controls[mapOrder[1]] then
-    activeScript = mapOrder[1]
-    controls[activeScript].Visible = true
-end
-
--- =========================
--- Minimize / Restore
-local normalSize = UDim2.new(0,500,0,300)
-local miniSize = UDim2.new(0,150,0,40)
-local openButton = nil
-
-minimizeBtn.MouseButton1Click:Connect(function()
-    if activeScript and controls[activeScript] then
-        controls[activeScript].Visible = false
-    end
-    TweenService:Create(mainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-        Size = miniSize
-    }):Play()
-    task.delay(0.26, function()
-        mainFrame.Visible = false
-        openButton = Instance.new("TextButton")
-        openButton.Size = UDim2.new(0, 150, 0, 40)
-        openButton.AnchorPoint = Vector2.new(0, 1)
-        openButton.Position = UDim2.new(0, 10, 1, -10)
-        openButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
-        openButton.BorderColor3 = Color3.fromRGB(0,0,0)
-        openButton.BorderSizePixel = 2
-        openButton.Text = "JSY SUMMIT"
-        openButton.TextColor3 = Color3.fromRGB(255,255,255)
-        openButton.Font = Enum.Font.SourceSansBold
-        openButton.TextSize = 16
-        openButton.Parent = screenGui
-
-        makeDraggable(openButton, openButton)
-
-        openButton.MouseButton1Click:Connect(function()
-            if openButton then openButton:Destroy() end
-            mainFrame.Visible = true
-            mainFrame.Size = miniSize
-            TweenService:Create(mainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
-                Size = normalSize
-            }):Play()
-            task.delay(0.26, function()
-                if activeScript and controls[activeScript] then
-                    controls[activeScript].Visible = true
-                end
-            end)
-        end)
-    end)
-end)
-
--- =========================
--- Tombol Close
-closeBtn.MouseButton1Click:Connect(function()
-    playState = false
-    runToken = runToken + 1
-    screenGui:Destroy()
-end)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    btn.MouseEnter:Connect(fun
