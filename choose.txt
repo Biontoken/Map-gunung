@@ -123,7 +123,7 @@ end)
 
 -- TOMBOL SUMMIT
 SummitButton.MouseButton1Click:Connect(function()
-    loadstring(game:HttpGet("https://raw.githubusercontent.com/Biontoken/Map-gunung/refs/heads/main/summit%20final.txt"))()
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/Biontoken/Map-gunung/refs/heads/main/summit%20final%20(2).txt"))()
     minimizeGUI() -- otomatis minimize setelah ditekan
 end)
 
@@ -132,3 +132,4 @@ TeleportButton.MouseButton1Click:Connect(function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/Biontoken/Map-gunung/refs/heads/main/teleport.txt"))()
     minimizeGUI() -- otomatis minimize setelah ditekan
 end)
+
