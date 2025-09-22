@@ -5,30 +5,32 @@ local RunService = game:GetService("RunService")
 local AirWPart = nil
 local Connection = nil
 local Active = false
+local GuiClosed = false -- flag untuk menandai apakah user sudah menutup GUI
 
 -- Buat GUI jika belum ada
 local function CreateGui()
+	if GuiClosed then return end -- jika user sudah close, jangan buat lagi
 	if Player.PlayerGui:FindFirstChild("AirwalkGui") then return end
 	
 	local ScreenGui = Instance.new("ScreenGui")
 	ScreenGui.Name = "AirwalkGui"
-	ScreenGui.ResetOnSpawn = false -- biar nggak hilang saat respawn
+	ScreenGui.ResetOnSpawn = false
 	ScreenGui.Parent = Player:WaitForChild("PlayerGui")
 	
-	-- Tombol Airwalk
+	-- Tombol Airwalk (sekarang Jalan di Udara)
 	local Button = Instance.new("TextButton")
 	Button.Size = UDim2.new(0,140,0,50)
-	Button.Position = UDim2.new(0,10,0,60) -- bawah hamburger
-	Button.BackgroundColor3 = Color3.fromRGB(128,0,255) -- Ungu
+	Button.Position = UDim2.new(0,10,0,60)
+	Button.BackgroundColor3 = Color3.fromRGB(0,0,0) -- hitam
 	Button.BackgroundTransparency = 0.3
 	Button.TextColor3 = Color3.fromRGB(255,255,255)
 	Button.Font = Enum.Font.SourceSansBold
 	Button.TextSize = 20
-	Button.Text = "Airwalk: OFF"
+	Button.Text = "Jalan di Udara: OFF"
 	Button.BorderSizePixel = 0
 	Button.Parent = ScreenGui
 	
-	-- Rounded sudut tombol Airwalk
+	-- Rounded sudut tombol
 	local ButtonCorner = Instance.new("UICorner")
 	ButtonCorner.CornerRadius = UDim.new(0,15)
 	ButtonCorner.Parent = Button
@@ -48,35 +50,42 @@ local function CreateGui()
 	
 	-- Rounded sudut tombol X
 	local CloseCorner = Instance.new("UICorner")
-	CloseCorner.CornerRadius = UDim.new(1,0) -- jadi bulat penuh
+	CloseCorner.CornerRadius = UDim.new(1,0)
 	CloseCorner.Parent = CloseBtn
 	
-	-- Fungsi aktifkan
+	-- Fungsi aktifkan Airwalk
 	local function EnableAirwalk()
 		if Active then return end
 		Active = true
 		
-		local HRP = Player.Character and Player.Character:WaitForChild("HumanoidRootPart")
-		if not HRP then return end
+		local Character = Player.Character
+		local HRP = Character and Character:WaitForChild("HumanoidRootPart")
+		local Humanoid = Character and Character:FindFirstChild("Humanoid")
+		if not HRP or not Humanoid then return end
 		
+		-- Buat part untuk Airwalk
 		AirWPart = Instance.new("Part")
 		AirWPart.Size = Vector3.new(7, 2, 7)
 		AirWPart.Anchored = true
 		AirWPart.Transparency = 1
 		AirWPart.Name = "Airwalk"
+		AirWPart.CanCollide = true
 		AirWPart.Parent = workspace
+		
+		-- Hitung offset aman
+		local HRP_Y_Offset = HRP.Size.Y/2 + 0.5
 		
 		Connection = RunService.RenderStepped:Connect(function()
 			if HRP and AirWPart then
-				AirWPart.CFrame = HRP.CFrame * CFrame.new(0, -4, 0)
+				AirWPart.CFrame = HRP.CFrame - Vector3.new(0, HRP_Y_Offset, 0)
 			end
 		end)
 		
-		Button.Text = "Airwalk: ON"
-		Button.BackgroundColor3 = Color3.fromRGB(100,0,200)
+		Button.Text = "Jalan di Udara: ON"
+		Button.BackgroundColor3 = Color3.fromRGB(0,0,0)
 	end
 	
-	-- Fungsi matikan
+	-- Fungsi matikan Airwalk
 	local function DisableAirwalk()
 		if not Active then return end
 		Active = false
@@ -91,8 +100,8 @@ local function CreateGui()
 			AirWPart = nil
 		end
 		
-		Button.Text = "Airwalk: OFF"
-		Button.BackgroundColor3 = Color3.fromRGB(128,0,255)
+		Button.Text = "Jalan di Udara: OFF"
+		Button.BackgroundColor3 = Color3.fromRGB(0,0,0)
 	end
 	
 	-- Toggle saat tombol ditekan
@@ -104,18 +113,19 @@ local function CreateGui()
 		end
 	end)
 	
-	-- Hapus GUI + matikan script saat X ditekan
+	-- Tombol X: hapus GUI + matikan Airwalk + set flag
 	CloseBtn.MouseButton1Click:Connect(function()
 		DisableAirwalk()
 		ScreenGui:Destroy()
+		GuiClosed = true
 	end)
 end
 
 -- Buat GUI saat pertama kali
 CreateGui()
 
--- Biar tetap ada kalau respawn
+-- Biar tetap ada kalau respawn, tapi cek flag
 Player.CharacterAdded:Connect(function()
-	task.wait(1) -- tunggu load
+	task.wait(1)
 	CreateGui()
 end)
