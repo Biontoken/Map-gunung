@@ -1,0 +1,303 @@
+--  Coordinate Tester GUI Final Ultimate (Full Fix)
+local Players = game:GetService("Players")
+local LP = Players.LocalPlayer
+
+-- Variabel
+local coords = {}
+local undoStack, redoStack = {}, {}
+local running = false
+local repeatOn, respawnOn = false, false
+local teleportThread
+
+-- === GUI UTAMA ===
+local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
+ScreenGui.Name = "CoordTester"
+
+local MainFrame = Instance.new("Frame", ScreenGui)
+MainFrame.Size = UDim2.new(0, 420, 0, 320)
+MainFrame.Position = UDim2.new(0.3, 0, 0.3, 0)
+MainFrame.BackgroundColor3 = Color3.fromRGB(40, 40, 40)
+MainFrame.Active, MainFrame.Draggable = true, true
+Instance.new("UICorner", MainFrame)
+
+-- Header
+local Header = Instance.new("TextLabel", MainFrame)
+Header.Size = UDim2.new(1, -30, 0, 30)
+Header.BackgroundColor3 = Color3.fromRGB(25, 25, 25)
+Header.Text = "teleport by jsy"
+Header.TextColor3 = Color3.fromRGB(255, 255, 255)
+Header.Font = Enum.Font.SourceSansBold
+Header.TextSize = 18
+Instance.new("UICorner", Header)
+
+-- Tombol minimize
+local MinBtn = Instance.new("TextButton", MainFrame)
+MinBtn.Size = UDim2.new(0, 30, 0, 30)
+MinBtn.Position = UDim2.new(1, -30, 0, 0)
+MinBtn.Text = "-"
+MinBtn.BackgroundColor3 = Color3.fromRGB(100, 0, 0)
+MinBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+Instance.new("UICorner", MinBtn)
+
+-- === Floating Mini ===
+local MiniFrame = Instance.new("Frame", ScreenGui)
+MiniFrame.Size = UDim2.new(0, 120, 0, 40)
+MiniFrame.Position = UDim2.new(0, 10, 0, 10)
+MiniFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
+MiniFrame.Visible = false
+MiniFrame.Active, MiniFrame.Draggable = true, true
+Instance.new("UICorner", MiniFrame)
+
+local OpenBtn = Instance.new("TextButton", MiniFrame)
+OpenBtn.Size = UDim2.new(1, 0, 1, 0)
+OpenBtn.Text = "teleport"
+OpenBtn.BackgroundTransparency = 1
+OpenBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+OpenBtn.BackgroundColor3 = Color3.fromRGB(0,0,0)
+
+-- === Kotak list teleport ===
+local ListFrame = Instance.new("ScrollingFrame", MainFrame)
+ListFrame.Size = UDim2.new(0.6, -10, 0.6, -40)
+ListFrame.Position = UDim2.new(0, 5, 0, 35)
+ListFrame.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+ListFrame.ScrollBarThickness = 8
+ListFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
+Instance.new("UICorner", ListFrame)
+
+local UIListLayout = Instance.new("UIListLayout", ListFrame)
+UIListLayout.Padding = UDim.new(0, 5)
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+
+-- === Panel kanan tombol ===
+local RightPanel = Instance.new("Frame", MainFrame)
+RightPanel.Size = UDim2.new(0.4, -10, 0.6, -40)
+RightPanel.Position = UDim2.new(0.6, 5, 0, 35)
+RightPanel.BackgroundTransparency = 1
+
+local function createBtn(text, order)
+    local btn = Instance.new("TextButton", RightPanel)
+    btn.Size = UDim2.new(1, 0, 0, 30)
+    btn.Position = UDim2.new(0, 0, 0, (order - 1) * 35)
+    btn.Text = text
+    btn.BackgroundColor3 = Color3.fromRGB(0,120,255)
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.Font = Enum.Font.SourceSansBold
+    btn.TextSize = 16
+    Instance.new("UICorner", btn)
+    return btn
+end
+
+local SaveBtn = createBtn("Save", 1)
+local UndoBtn = createBtn("Undo", 2)
+local RedoBtn = createBtn("Redo", 3)
+local RepeatBtn = createBtn("Repeat", 4)
+local RespawnBtn = createBtn("Respawn", 5)
+
+RepeatBtn.BackgroundColor3 = Color3.fromRGB(200,0,0)
+RespawnBtn.BackgroundColor3 = Color3.fromRGB(200,0,0)
+
+-- === Bottom bar ===
+local BottomFrame = Instance.new("Frame", MainFrame)
+BottomFrame.Size = UDim2.new(1, -10, 0, 35)
+BottomFrame.Position = UDim2.new(0, 5, 1, -40)
+BottomFrame.BackgroundTransparency = 1
+
+local StartBtn = Instance.new("TextButton", BottomFrame)
+StartBtn.Size = UDim2.new(0, 100, 1, 0)
+StartBtn.Position = UDim2.new(0, 0, 0, 0)
+StartBtn.Text = "Start"
+StartBtn.BackgroundColor3 = Color3.fromRGB(0,200,0)
+StartBtn.TextColor3 = Color3.fromRGB(255,255,255)
+Instance.new("UICorner", StartBtn)
+
+local StopBtn = Instance.new("TextButton", BottomFrame)
+StopBtn.Size = UDim2.new(0, 100, 1, 0)
+StopBtn.Position = UDim2.new(0, 110, 0, 0)
+StopBtn.Text = "Stop"
+StopBtn.BackgroundColor3 = Color3.fromRGB(200,0,0)
+StopBtn.TextColor3 = Color3.fromRGB(255,255,255)
+Instance.new("UICorner", StopBtn)
+
+local DelayBox = Instance.new("TextBox", BottomFrame)
+DelayBox.Size = UDim2.new(0, 120, 1, 0)
+DelayBox.Position = UDim2.new(1, -120, 0, 0)
+DelayBox.PlaceholderText = "atur delay"
+DelayBox.Text = ""
+DelayBox.BackgroundColor3 = Color3.fromRGB(70,70,70)
+DelayBox.TextColor3 = Color3.fromRGB(255,255,255)
+Instance.new("UICorner", DelayBox)
+
+-- === Progress Bar ===
+local ProgressText = Instance.new("TextLabel", MainFrame)
+ProgressText.Size = UDim2.new(1, -10, 0, 20)
+ProgressText.Position = UDim2.new(0, 5, 0.65, -10)
+ProgressText.BackgroundTransparency = 1
+ProgressText.Text = "Progress: 0 / 0"
+ProgressText.TextColor3 = Color3.fromRGB(255, 255, 255)
+ProgressText.Font = Enum.Font.SourceSansBold
+ProgressText.TextSize = 14
+
+local ProgressBar = Instance.new("Frame", MainFrame)
+ProgressBar.Size = UDim2.new(1, -10, 0, 15)
+ProgressBar.Position = UDim2.new(0, 5, 0.65, 15)
+ProgressBar.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+Instance.new("UICorner", ProgressBar)
+
+local ProgressFill = Instance.new("Frame", ProgressBar)
+ProgressFill.Size = UDim2.new(0, 0, 1, 0)
+ProgressFill.BackgroundColor3 = Color3.fromRGB(0, 200, 0)
+Instance.new("UICorner", ProgressFill)
+
+-- === Fungsi & Logic ===
+local function updateProgress(current, total)
+    ProgressText.Text = string.format("Progress: %d / %d", current, total)
+    if total > 0 then
+        ProgressFill.Size = UDim2.new(current/total, 0, 1, 0)
+    else
+        ProgressFill.Size = UDim2.new(0, 0, 1, 0)
+    end
+end
+
+local function addCoord(v3)
+    table.insert(coords, v3)
+    redoStack = {}
+
+    local label = Instance.new("TextLabel", ListFrame)
+    label.Size = UDim2.new(1, -5, 0, 25)
+    label.Name = "teleport " .. #coords
+    label.Text = "teleport " .. #coords
+    label.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+    label.TextColor3 = Color3.fromRGB(255, 255, 255)
+    label.Font = Enum.Font.SourceSans
+    label.TextSize = 14
+    label.TextXAlignment = Enum.TextXAlignment.Left
+    label.LayoutOrder = #coords
+    Instance.new("UICorner", label)
+
+    updateProgress(0, #coords)
+end
+
+local function RespawnCharacter()
+    if LP and LP.Character then
+        local char = LP.Character
+        local humanoid = char:FindFirstChildOfClass("Humanoid")
+        if humanoid then humanoid.Health = 0 end
+        task.wait(1)
+        LP:LoadCharacter()
+    end
+end
+
+local function teleportToCoords()
+    running = true
+    teleportThread = coroutine.wrap(function()
+        while running do
+            for i, v in ipairs(coords) do
+                if not running then break end
+                if LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
+                    LP.Character:MoveTo(v)
+                end
+                updateProgress(i, #coords)
+                local delayTime = tonumber(DelayBox.Text) or 1
+                task.wait(delayTime)
+            end
+            if respawnOn then
+                RespawnCharacter()
+                task.wait(3)
+            end
+            if not repeatOn then
+                running = false
+            else
+                updateProgress(0, #coords)
+            end
+        end
+    end)
+    teleportThread()
+end
+
+-- Button logic
+SaveBtn.MouseButton1Click:Connect(function()
+    if LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
+        local pos = LP.Character.HumanoidRootPart.Position
+        addCoord(Vector3.new(
+            math.floor(pos.X*100)/100,
+            math.floor(pos.Y*100)/100,
+            math.floor(pos.Z*100)/100
+        ))
+    end
+end)
+
+UndoBtn.MouseButton1Click:Connect(function()
+    if #coords > 0 then
+        local lastCoord = table.remove(coords)
+        table.insert(redoStack, lastCoord)
+
+        local lbl = ListFrame:FindFirstChild("teleport " .. (#coords+1))
+        if lbl then lbl:Destroy() end
+
+        updateProgress(0, #coords)
+    end
+end)
+
+RedoBtn.MouseButton1Click:Connect(function()
+    if #redoStack > 0 then
+        local coord = table.remove(redoStack)
+        table.insert(coords, coord)
+
+        local label = Instance.new("TextLabel", ListFrame)
+        label.Size = UDim2.new(1, -5, 0, 25)
+        label.Name = "teleport " .. #coords
+        label.Text = "teleport " .. #coords
+        label.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+        label.TextColor3 = Color3.fromRGB(255, 255, 255)
+        label.Font = Enum.Font.SourceSans
+        label.TextSize = 14
+        label.TextXAlignment = Enum.TextXAlignment.Left
+        label.LayoutOrder = #coords
+        Instance.new("UICorner", label)
+
+        updateProgress(0, #coords)
+    end
+end)
+
+StartBtn.MouseButton1Click:Connect(function()
+    if not running and #coords > 0 then
+        teleportToCoords()
+    end
+end)
+
+StopBtn.MouseButton1Click:Connect(function()
+    running = false
+end)
+
+RepeatBtn.MouseButton1Click:Connect(function()
+    repeatOn = not repeatOn
+    RepeatBtn.BackgroundColor3 = repeatOn and Color3.fromRGB(0, 200, 0) or Color3.fromRGB(200, 0, 0)
+end)
+
+RespawnBtn.MouseButton1Click:Connect(function()
+    respawnOn = not respawnOn
+    RespawnBtn.BackgroundColor3 = respawnOn and Color3.fromRGB(0, 200, 0) or Color3.fromRGB(200, 0, 0)
+end)
+
+-- Minimize logic
+MinBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = false
+    MiniFrame.Visible = true
+end)
+OpenBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = true
+    MiniFrame.Visible = false
+end)
+
+-- Auto restart teleport after respawn if Repeat+Respawn active
+LP.CharacterAdded:Connect(function(char)
+    char:WaitForChild("HumanoidRootPart", 5)
+    running = false
+    teleportThread = nil
+    if repeatOn and respawnOn and #coords > 0 then
+        teleportToCoords()
+    end
+end)
+
+-- Init
+updateProgress(0, 0)
