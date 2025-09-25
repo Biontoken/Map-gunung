@@ -1,0 +1,671 @@
+-- FINAL TELEPORT GUI (FULL FIX)
+local Players = game:GetService("Players")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+local player = Players.LocalPlayer
+local playerGui = player:WaitForChild("PlayerGui")
+
+-- =========================
+--  KOORDINAT PER MAP
+-- =========================
+local coordinates = {
+    ["Daun"] = {
+    Vector3.new(-624.4, 250.1, -382.7),  
+    Vector3.new(-1202.9, 261.5, -487.0),
+    Vector3.new(-1399.2, 578.2, -951.6), 
+    Vector3.new(-1700.5, 816.4, -1400.2), 
+    Vector3.new(-3242.7, 1717.0, -2570.1),
+    },
+    ["Arunika"] = {
+    Vector3.new(135.5, 141.6, -174.5),  
+    Vector3.new(326.5, 89.6, -433.8),
+    Vector3.new(476.1, 169.6, -940.6), 
+    Vector3.new(929.7, 133.2, -626.4), 
+    Vector3.new(923.4, 101.5, 279.2), 
+    Vector3.new(271.2, 325.0, 694.8),
+    },
+    ["Lembayana"] = {
+        Vector3.new(615.04, 254.24, 671.78),
+        Vector3.new(-23463.65, 6352.11, -6882.95),
+    },
+     ["Atin"] = {
+     Vector3.new(4.17, 12.79, -402.37),  
+    Vector3.new(-184.72, 128.34, 409.39),
+    Vector3.new(-165.44, 229.73, 652.81), 
+    Vector3.new(-38.80, 406.63, 615.52), 
+    Vector3.new(130.76, 652.03, 613.65), 
+    Vector3.new(-246.52, 665.97, 734.14),
+    Vector3.new(-683.33, 641.00, 867.16), 
+    Vector3.new(-658.79, 688.65, 1458.01), 
+    Vector3.new(-507.87, 903.15, 1866.98), 
+    Vector3.new(60.82, 950.11, 2088.46), 
+    Vector3.new(52.34, 981.75, 2450.08), 
+    Vector3.new(72.03, 1097.13, 2457.71),
+    Vector3.new(261.96, 1270.30, 2037.79),
+    Vector3.new(-418.50, 1302.39, 2393.41), 
+    Vector3.new(-773.11, 1313.13, 2663.09), 
+    Vector3.new(-837.52, 1475.39, 2625.32), 
+    Vector3.new(-469.41, 1465.82, 2768.14),
+    Vector3.new(-468.30, 1537.36, 2837.35),
+    Vector3.new(-384.98, 1640.47, 2793.79),
+    Vector3.new(-209.06, 1665.87, 2748.48), 
+    Vector3.new(-232.44, 1742.28, 2792.85), 
+    Vector3.new(-424.03, 1740.80, 2798.41), 
+    Vector3.new(-423.78, 1712.86, 3420.15), 
+    Vector3.new(70.17, 1718.92, 3427.31), 
+    Vector3.new(435.24, 1720.79, 3430.20), 
+    Vector3.new(625.72, 1799.46, 3432.63), 
+    Vector3.new(803.32, 2152.52, 3917.84), 
+    },
+    ["Sibuatan"] = {
+     Vector3.new(-312.66, 157.26, -325.19),  
+    Vector3.new(-726.94, 594.22, -124.58),
+    Vector3.new(-884.09, 998.02, -205.57),
+    Vector3.new(-1636.86, 998.22, 281.52),
+    Vector3.new(-1648.60, 1000.31, 632.00),
+    Vector3.new(-1638.69, 1118.22, 2151.09),
+    Vector3.new(-520.05, 1449.22, 3279.23),
+    Vector3.new(-708.12, 1898.22, 2383.35),
+    Vector3.new(-861.09, 1946.02, 2068.89),
+    Vector3.new(-867.44, 2106.22, 1668.69),
+    Vector3.new(-901.25, 2346.22, 1441.96),
+    Vector3.new(-846.82, 2770.22, 1505.51),
+    Vector3.new(-615.17, 3290.22, 1918.66),
+    Vector3.new(-236.66, 3409.42, 2578.83),
+    Vector3.new(310.56, 3546.22, 3042.65),
+    Vector3.new(441.54, 3602.22, 3563.51),
+    Vector3.new(911.35, 3670.22, 4150.09),
+    Vector3.new(1421.38, 3910.22, 4995.66),
+    Vector3.new(1667.96, 4290.22, 5191.47),
+    Vector3.new(1720.53, 4474.02, 5170.92),
+    Vector3.new(1864.95, 4658.14, 5199.25),
+    Vector3.new(1901.47, 4966.22, 5156.94),
+    Vector3.new(2847.56, 5078.22, 5242.81),
+    Vector3.new(3460.63, 5246.22, 5120.98),
+    Vector3.new(4577.95, 5482.22, 5264.38),
+    Vector3.new(4635.82, 4954.13, 5236.15),
+    Vector3.new(4879.69, 3989.81, 5181.52),
+    Vector3.new(5831.44, 4001.69, 5741.29),
+    Vector3.new(6632.18, 4227.62, 5577.15),
+    Vector3.new(7477.49, 4227.44, 5305.86),
+    Vector3.new(8212.72, 4334.22, 4893.85),
+    Vector3.new(8693.96, 4486.22, 4545.58),
+    Vector3.new(8785.15, 4542.22, 4344.15),
+    Vector3.new(9198.52, 5078.22, 2465.59),
+    Vector3.new(9076.17, 5894.22, 2043.22),
+    Vector3.new(9187.73, 6222.00, 1988.54),
+    Vector3.new(9063.37, 6502.63, 1828.22),
+    Vector3.new(8694.50, 6534.03, 1292.70),
+    Vector3.new(8396.32, 6562.21, 1139.57),
+    Vector3.new(7994.49, 6612.82, 1016.91),
+    Vector3.new(7140.04, 6778.22, 376.46),
+    Vector3.new(6572.67, 6971.08, 254.68),
+    Vector3.new(6041.96, 6970.22, 252.17),
+    Vector3.new(4873.17, 7150.22, 679.85),
+    Vector3.new(5393.70, 8114.02, 2206.42),
+    Vector3.new(5414.15, 8094.22, 2289.03),
+    },
+    ["MT Galunggung"] = {
+    Vector3.new(-714.09, 175.48, 414.42),
+Vector3.new(-926.69, 166.52, 102.12),
+Vector3.new(-1237.29, 149.82, -54.59),
+Vector3.new(-1356.75, 164.56, -823.67),
+Vector3.new(-1315.19, 227.13, -991.02),
+Vector3.new(-1360.70, 372.37, -1488.29),
+Vector3.new(-1322.85, 256.37, -2252.07),
+Vector3.new(-1240.42, 222.61, -2650.06),
+Vector3.new(-1239.71, 472.34, -3402.04),
+},
+    ["GN Galunggung"] = {
+    Vector3.new(464.56, 93.00, 580.97),
+Vector3.new(538.92, 209.00, 343.02),
+Vector3.new(14.18, 185.00, 679.19),
+Vector3.new(-567.69, 441.00, 377.84),
+Vector3.new(-95.99, 713.51, -482.85),
+Vector3.new(-410.65, 888.98, -320.34),
+Vector3.new(-719.08, 1148.82, -1008.31),
+Vector3.new(-496.80, 1329.00, -1381.67),
+Vector3.new(-802.54, 1360.85, -1550.90),
+Vector3.new(-932.93, 1928.72, -3036.70),
+    },
+["Akhirat"] = {
+Vector3.new(-134.86, 421.50, -220.50),
+Vector3.new(-3.96, 949.83, -1050.66),
+Vector3.new(108.29, 1201.77, -1361.92),
+Vector3.new(103.15, 1465.62, -1807.12),
+Vector3.new(298.18, 1865.52, -2329.94),
+Vector3.new(557.54, 2085.80, -2559.11),
+Vector3.new(752.14, 2186.24, -2498.52),
+Vector3.new(791.83, 2330.24, -2640.45),
+Vector3.new(968.46, 2518.24, -2633.25),
+Vector3.new(1237.96, 2694.04, -2801.77),
+Vector3.new(1620.47, 3058.04, -2751.82),
+Vector3.new(1811.44, 3578.24, -3244.52),
+Vector3.new(2810.36, 4422.27, -4796.40),
+Vector3.new(3470.50, 4858.04, -4178.06),
+Vector3.new(3478.13, 5106.04, -4278.60),
+Vector3.new(3973.48, 5666.24, -3970.84),
+Vector3.new(4496.54, 5898.34, -3791.74),
+Vector3.new(5063.47, 6370.24, -2979.08),
+Vector3.new(5537.54, 6590.24, -2490.93),
+Vector3.new(5546.85, 6874.24, -1047.64),
+Vector3.new(4328.29, 7641.47, 130.04),
+Vector3.new(3456.99, 7710.24, 935.25),
+Vector3.new(3038.18, 7878.24, 1040.68),
+},
+["Yahayuk"] = {
+Vector3.new(-429.16, 249.26, 787.50),
+Vector3.new(-368.67, 388.26, 533.12),
+Vector3.new(295.57, 430.73, 497.84),
+Vector3.new(327.00, 490.26, 364.82),
+Vector3.new(217.31, 314.26, -144.15),
+Vector3.new(-613.47, 905.00, -542.23),
+Vector3.new(-641.10, 912.11, -504.28),
+},
+["Ckptw"] = {
+Vector3.new(510.99, 160.87, -530.53),
+Vector3.new(387.14, 309.93, -184.92),
+Vector3.new(100.61, 412.53, 615.83),
+Vector3.new(11.09, 601.43, 997.72),
+Vector3.new(872.32, 865.14, 582.14),
+Vector3.new(1616.32, 1081.42, 158.33),
+Vector3.new(2968.94, 1527.82, 707.93),
+Vector3.new(1946.17, 1743.84, 1224.97),
+Vector3.new(1805.01, 1982.23, 2168.24),
+},
+["Mirage"] = {
+Vector3.new(-195.42, 43.76, 510.68),
+Vector3.new(72.08, 574.24, 4559.20),
+Vector3.new(63.89, 581.07, 4122.36),
+},
+["Hell"] = {
+Vector3.new(-102.33, 201.11, 271.94),
+Vector3.new(154.63, 249.05, 423.72),
+Vector3.new(483.94, 353.33, 311.83),
+Vector3.new(525.96, 413.13, -314.66),
+Vector3.new(-226.11, 541.26, -754.97),
+Vector3.new(-655.24, 541.06, -651.62),
+Vector3.new(-815.44, 434.14, 438.48),
+Vector3.new(-320.98, 409.57, 659.80),
+Vector3.new(346.07, 329.41, 715.37),
+Vector3.new(806.37, 637.37, 864.43),
+Vector3.new(1252.80, 825.45, 395.37),
+Vector3.new(1511.07, 1193.36, 18.07),
+Vector3.new(1000.93, 1193.21, -57.81),
+Vector3.new(-1498.29, 1872.70, -19.60),
+Vector3.new(-1367.72, 1883.21, -186.67),
+},
+["Batu"] = {
+Vector3.new(-122.98, 8.77, 543.66),
+Vector3.new(-39.97, 392.82, 673.40),
+Vector3.new(-296.72, 484.82, 778.62),
+Vector3.new(15.38, 572.62, 663.08),
+Vector3.new(587.08, 916.82, 637.25),
+Vector3.new(282.91, 1196.82, 180.55),
+Vector3.new(552.35, 1528.82, -582.88),
+Vector3.new(332.64, 1736.82, -259.89),
+Vector3.new(289.71, 1979.42, -203.55),
+Vector3.new(613.23, 3260.82, -71.04),
+Vector3.new(334.64, 3244.61, -31.39),
+},
+}
+--  STATE
+-- =========================
+local settingsState = {
+    respawn = false,
+    repeatTp = false,
+    delay = 30
+}
+
+local activeScript = nil
+local playState = false
+local runToken = 0
+
+-- =========================
+--  HELPERS
+-- =========================
+local function waitDelaySafely(delaySec, mapName, myToken)
+    local t0 = tick()
+    while tick() - t0 < delaySec do
+        if not playState or myToken ~= runToken or activeScript ~= mapName then
+            return false
+        end
+        task.wait()
+    end
+    return true
+end
+
+local function respawnLocal()
+    local char = player.Character
+    if char then
+        local hum = char:FindFirstChildOfClass("Humanoid")
+        if hum and hum.Health > 0 then
+            hum.Health = 0
+        end
+    end
+    player.CharacterAdded:Wait()
+    task.wait(0.25)
+end
+
+local function teleportSequence(mapName)
+    local points = coordinates[mapName]
+    if not points or #points == 0 then return end
+
+    runToken = runToken + 1
+    local myToken = runToken
+
+    while playState and myToken == runToken and activeScript == mapName do
+        for _, pos in ipairs(points) do
+            if not playState or myToken ~= runToken or activeScript ~= mapName then
+                return
+            end
+            local char = player.Character or player.CharacterAdded:Wait()
+            local hrp = char:FindFirstChild("HumanoidRootPart") or char:WaitForChild("HumanoidRootPart")
+            if not hrp then return end
+
+            hrp.CFrame = CFrame.new(pos)
+
+            if not waitDelaySafely(math.max(0.01, tonumber(settingsState.delay) or 0.01), mapName, myToken) then
+                return
+            end
+        end
+
+        if settingsState.respawn then
+    respawnLocal()
+end
+
+-- Tambahkan delay sebelum mulai repeat
+if settingsState.repeatTp then
+    if not waitDelaySafely(math.max(0.01, tonumber(settingsState.delay) or 0.01), mapName, myToken) then
+        return
+    end
+end
+
+if not settingsState.repeatTp then
+    break
+        end
+    end
+end
+
+-- =========================
+--  GUI
+-- =========================
+local screenGui = Instance.new("ScreenGui")
+screenGui.Name = "FinalStableGui"
+screenGui.ResetOnSpawn = false
+screenGui.Parent = playerGui
+
+local mainFrame = Instance.new("Frame")
+mainFrame.Size = UDim2.new(0, 500, 0, 300)
+mainFrame.Position = UDim2.new(0.5, -250, 0.5, -150)
+mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+mainFrame.BorderSizePixel = 2
+mainFrame.Parent = screenGui
+mainFrame.BorderColor3 = Color3.fromRGB(255, 255, 255) -- putih
+
+
+-- Navbar (handle draggable)
+local navbar = Instance.new("Frame")
+navbar.Size = UDim2.new(1, 0, 0, 30)
+navbar.BackgroundColor3 = Color3.fromRGB(10, 10, 10)
+navbar.BorderSizePixel = 0
+navbar.Parent = mainFrame
+
+-- Garis bawah navbar
+local underline = Instance.new("Frame")
+underline.Size = UDim2.new(1, 0, 0, 2)
+underline.Position = UDim2.new(0, 0, 1, 2)
+underline.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+underline.BorderSizePixel = 0
+underline.Parent = navbar
+
+-- Judul GUI
+local titleLabel = Instance.new("TextLabel")
+titleLabel.Size = UDim2.new(1, -90, 1, 0)
+titleLabel.Position = UDim2.new(0, 10, 0, 0)
+titleLabel.BackgroundTransparency = 1
+titleLabel.Text = "Auto Summit JSY"
+titleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+titleLabel.Font = Enum.Font.SourceSansBold
+titleLabel.TextSize = 18
+titleLabel.TextXAlignment = Enum.TextXAlignment.Left
+titleLabel.Parent = navbar
+
+-- Tombol Close
+local closeBtn = Instance.new("TextButton")
+closeBtn.Size = UDim2.new(0, 30, 1, 0)
+closeBtn.Position = UDim2.new(1, -30, 0, 0)
+closeBtn.Text = "X"
+closeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+closeBtn.BackgroundColor3 = Color3.fromRGB(180, 30, 30)
+closeBtn.Parent = navbar
+
+-- Tombol Minimize
+local minimizeBtn = Instance.new("TextButton")
+minimizeBtn.Size = UDim2.new(0, 30, 1, 0)
+minimizeBtn.Position = UDim2.new(1, -60, 0, 0)
+minimizeBtn.Text = "-"
+minimizeBtn.TextColor3 = Color3.fromRGB(255,255,255)
+minimizeBtn.BackgroundColor3 = Color3.fromRGB(80, 0, 120)
+minimizeBtn.Parent = navbar
+
+-- =========================
+-- ListFrame kiri
+local navbarHeight = 30
+local offsetTop = 10
+
+local listFrame = Instance.new("ScrollingFrame")
+listFrame.Position = UDim2.new(0, 0, 0, navbarHeight + offsetTop)
+listFrame.Size = UDim2.new(0, 140, 1, -(navbarHeight + offsetTop))
+listFrame.BackgroundColor3 = Color3.fromRGB(15,15,15)
+listFrame.ScrollBarThickness = 2
+listFrame.CanvasSize = UDim2.new(0,0,0,0)
+listFrame.Parent = mainFrame
+listFrame.BorderSizePixel = 0
+
+local listPadding = Instance.new("UIPadding")
+listPadding.PaddingTop = UDim.new(0, 4)
+listPadding.Parent = listFrame
+
+local listLayout = Instance.new("UIListLayout")
+listLayout.Padding = UDim.new(0, 6)
+listLayout.FillDirection = Enum.FillDirection.Vertical
+listLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+listLayout.VerticalAlignment = Enum.VerticalAlignment.Top
+listLayout.Parent = listFrame
+
+listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    listFrame.CanvasSize = UDim2.new(0,0,0,listLayout.AbsoluteContentSize.Y + 10)
+end)
+
+-- =========================
+-- Panel kontrol kanan
+local controlFrame = Instance.new("Frame")
+controlFrame.Position = UDim2.new(0, 145, 0, navbarHeight + offsetTop)
+controlFrame.Size = UDim2.new(1, -145, 1, -(navbarHeight + offsetTop))
+controlFrame.BackgroundColor3 = Color3.fromRGB(20,20,20)
+controlFrame.Parent = mainFrame
+controlFrame.BorderSizePixel = 0
+
+-- Garis putih di sisi kiri controlFrame
+local leftLine = Instance.new("Frame")
+leftLine.Size = UDim2.new(0, 2, 1, 0)        -- 2px lebar, tinggi 100%
+leftLine.Position = UDim2.new(0, 0, 0, -3)    -- di kiri
+leftLine.BackgroundColor3 = Color3.fromRGB(255, 255, 255) -- putih
+leftLine.BorderSizePixel = 0
+leftLine.Parent = controlFrame
+
+
+local controls = {}
+
+-- =========================
+-- Dragging helper (navbar handle, mainFrame moves)
+local function makeDraggable(handle, frame)
+    local dragging, dragInput, dragStart, startPos
+    handle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+            dragging = true
+            dragStart = input.Position
+            startPos = frame.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+    handle.InputChanged:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+            dragInput = input
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if input == dragInput and dragging then
+            local delta = input.Position - dragStart
+            frame.Position = UDim2.new(
+                startPos.X.Scale, startPos.X.Offset + delta.X,
+                startPos.Y.Scale, startPos.Y.Offset + delta.Y
+            )
+        end
+    end)
+end
+makeDraggable(navbar, mainFrame)
+
+-- =========================
+-- Fungsi buat panel kontrol per map
+local function createControls(name)
+    local frame = Instance.new("Frame")
+    frame.Size = UDim2.new(1,0,1,0)
+    frame.BackgroundTransparency = 1
+    frame.Visible = false
+    frame.Parent = controlFrame
+
+    -- Tombol Play
+    local playBtn = Instance.new("TextButton")
+    playBtn.Size = UDim2.new(0, 220, 0, 50)
+    playBtn.Position = UDim2.new(0.5, -110, 0, 30)
+    playBtn.BackgroundColor3 = Color3.fromRGB(200, 0, 0)
+    playBtn.Text = "Play OFF"
+    playBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    playBtn.Font = Enum.Font.SourceSansBold
+    playBtn.TextSize = 24
+    playBtn.Parent = frame
+    playBtn.BorderSizePixel = 2
+    playBtn.BorderColor3 = Color3.fromRGB(255, 255, 255)
+
+    playBtn.MouseButton1Click:Connect(function()
+        if not playState then
+            playState = true
+            playBtn.Text = "Play ON"
+            playBtn.BackgroundColor3 = Color3.fromRGB(0,200,0)
+            task.spawn(function()
+                teleportSequence(name)
+                playState = false
+                playBtn.Text = "Play OFF"
+                playBtn.BackgroundColor3 = Color3.fromRGB(200,0,0)
+            end)
+        else
+            playState = false
+            runToken = runToken + 1
+            playBtn.Text = "Play OFF"
+            playBtn.BackgroundColor3 = Color3.fromRGB(200,0,0)
+        end
+    end)
+
+    -- Toggle helper
+    local function createToggle(label, order, callback)
+        local lbl = Instance.new("TextLabel")
+        lbl.Size = UDim2.new(0, 100, 0, 30)
+        lbl.Position = UDim2.new(0, 40, 0, 100 + (order * 45))
+        lbl.Text = label
+        lbl.TextColor3 = Color3.fromRGB(255, 255, 255)
+        lbl.BackgroundTransparency = 1
+        lbl.Font = Enum.Font.SourceSansBold
+        lbl.TextSize = 18
+        lbl.Parent = frame
+
+        local toggle = Instance.new("TextButton")
+        toggle.Size = UDim2.new(0, 70, 0, 30)
+        toggle.Position = UDim2.new(0, 160, 0, 100 + (order * 45))
+        toggle.BackgroundColor3 = Color3.fromRGB(200,0,0)
+        toggle.Text = "OFF"
+        toggle.TextColor3 = Color3.fromRGB(255,255,255)
+        toggle.Font = Enum.Font.SourceSansBold
+        toggle.TextSize = 16
+        toggle.Parent = frame
+        toggle.BorderSizePixel = 2
+        toggle.BorderColor3 = Color3.fromRGB(255, 255, 255)
+
+
+        local state = false
+        toggle.MouseButton1Click:Connect(function()
+            state = not state
+            toggle.Text = state and "ON" or "OFF"
+            toggle.BackgroundColor3 = state and Color3.fromRGB(0,200,0) or Color3.fromRGB(200,0,0)
+            callback(state)
+        end)
+    end
+
+    -- Respawn toggle
+    createToggle("respawn", 0, function(state)
+        settingsState.respawn = state
+    end)
+    -- Repeat toggle
+    createToggle("repeat", 1, function(state)
+        settingsState.repeatTp = state
+    end)
+
+    -- Delay
+    local lbl = Instance.new("TextLabel")
+    lbl.Size = UDim2.new(0, 100, 0, 30)
+    lbl.Position = UDim2.new(0, 40, 0, 190)
+    lbl.Text = "Delay"
+    lbl.TextColor3 = Color3.fromRGB(255,255,255)
+    lbl.BackgroundTransparency = 1
+    lbl.Font = Enum.Font.SourceSansBold
+    lbl.TextSize = 18
+    lbl.Parent = frame
+
+    local speedBox = Instance.new("TextBox")
+    speedBox.Size = UDim2.new(0, 70, 0, 30)
+    speedBox.Position = UDim2.new(0, 160, 0, 190)
+    speedBox.BackgroundColor3 = Color3.fromRGB(60,60,60)
+    speedBox.Text = tostring(settingsState.delay)
+    speedBox.TextColor3 = Color3.fromRGB(255,255,255)
+    speedBox.Font = Enum.Font.SourceSansBold
+    speedBox.TextSize = 16
+    speedBox.ClearTextOnFocus = false
+    speedBox.Parent = frame
+    speedBox.BorderSizePixel = 2
+    speedBox.BorderColor3 = Color3.fromRGB(255,255,255)
+
+    local function clampDelay(v)
+        v = tonumber(v)
+        if not v then return settingsState.delay end
+        if v < 0.01 then v = 0.01 end
+        if v > 1000 then v = 1000 end
+        return v
+    end
+    speedBox.FocusLost:Connect(function()
+        local val = clampDelay(speedBox.Text)
+        settingsState.delay = val
+        speedBox.Text = tostring(val)
+    end)
+
+    -- Label nama map
+    local scriptLabel = Instance.new("TextLabel")
+    scriptLabel.Size = UDim2.new(1, 0, 0, 40)
+    scriptLabel.Position = UDim2.new(0, 0, 1, -50)
+    scriptLabel.BackgroundTransparency = 1
+    scriptLabel.Text = string.upper(name)
+    scriptLabel.TextColor3 = Color3.fromRGB(255,255,0)
+    scriptLabel.Font = Enum.Font.SourceSansBold
+    scriptLabel.TextSize = 22
+    scriptLabel.Parent = frame
+
+    controls[name] = frame
+end
+
+-- =========================
+-- Tombol map
+local function addScriptButton(name)
+    createControls(name)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(1, -10, 0, 40)
+    btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+    btn.Text = name
+    btn.TextColor3 = Color3.fromRGB(255, 255, 255)
+    btn.Font = Enum.Font.SourceSansBold
+    btn.TextSize = 18
+    btn.Parent = listFrame
+    btn.BorderSizePixel = 2
+    btn.BorderColor3 = Color3.fromRGB(255,255,255)
+
+    btn.MouseEnter:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(60, 60, 60)}):Play()
+    end)
+    btn.MouseLeave:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundColor3 = Color3.fromRGB(0, 0, 0)}):Play()
+    end)
+
+    btn.MouseButton1Click:Connect(function()
+        if playState then
+            playState = false
+            runToken = runToken + 1
+        end
+        for _, frame in pairs(controls) do
+            frame.Visible = false
+        end
+        controls[name].Visible = true
+        activeScript = name
+    end)
+end
+
+-- Generate buttons
+local mapOrder = {"Daun", "Arunika", "Lembayana", "Atin", "Sibuatan", "GN Galunggung", "MT Galunggung", "Akhirat", "Yahayuk", "Ckptw", "Mirage", "Hell", "Batu",}
+for _, name in ipairs(mapOrder) do
+    if coordinates[name] then
+        addScriptButton(name)
+    end
+end
+
+-- pilih map pertama
+if mapOrder[1] and controls[mapOrder[1]] then
+    activeScript = mapOrder[1]
+    controls[activeScript].Visible = true
+end
+
+-- =========================
+-- Minimize / Restore
+local normalSize = UDim2.new(0,500,0,300)
+local miniSize = UDim2.new(0,150,0,40)
+local openButton = nil
+
+minimizeBtn.MouseButton1Click:Connect(function()
+    if activeScript and controls[activeScript] then
+        controls[activeScript].Visible = false
+    end
+    TweenService:Create(mainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        Size = miniSize
+    }):Play()
+    task.delay(0.26, function()
+        mainFrame.Visible = false
+        openButton = Instance.new("TextButton")
+        openButton.Size = UDim2.new(0, 150, 0, 40)
+        openButton.AnchorPoint = Vector2.new(0, 1)
+        openButton.Position = UDim2.new(0, 10, 1, -10)
+        openButton.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+        openButton.BorderColor3 = Color3.fromRGB(0,0,0)
+        openButton.BorderSizePixel = 2
+        openButton.Text = "JSY SUMMIT"
+        openButton.TextColor3 = Color3.fromRGB(255,255,255)
+        openButton.Font = Enum.Font.SourceSansBold
+        openButton.TextSize = 16
+        openButton.Parent = screenGui
+
+        makeDraggable(openButton, openButton)
+
+        openButton.MouseButton1Click:Connect(function()
+            if openButton then openButton:Destroy() end
+            mainFrame.Visible = true
+            mainFrame.Size = miniSize
+            TweenService:Create(mainFrame, TweenInfo.new(0.25, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                Size = normalSize
+            }):Play()
+            task.delay(0.26, function()
+                if activeScript and controls[activeScript] then
+                    controls[activeScript].Visible = true
+                end
+            end)
+        end)
+    end)
+end)
+
+-- =========================
+-- Tombol Close
+closeBtn.MouseButton1Click:Connect(function()
+    playState = false
+    runToken = runToken + 1
+    screenGui:Destroy()
+end)
