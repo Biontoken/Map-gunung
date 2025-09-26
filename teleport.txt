@@ -1,4 +1,4 @@
---  Coordinate Tester GUI Final Ultimate (Full Fix)
+-- 🛰️ Coordinate Tester GUI Final (XYZ TextBox Version)
 local Players = game:GetService("Players")
 local LP = Players.LocalPlayer
 
@@ -53,20 +53,21 @@ OpenBtn.Size = UDim2.new(1, 0, 1, 0)
 OpenBtn.Text = "teleport"
 OpenBtn.BackgroundTransparency = 1
 OpenBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
-OpenBtn.BackgroundColor3 = Color3.fromRGB(0,0,0)
 
--- === Kotak list teleport ===
-local ListFrame = Instance.new("ScrollingFrame", MainFrame)
-ListFrame.Size = UDim2.new(0.6, -10, 0.6, -40)
-ListFrame.Position = UDim2.new(0, 5, 0, 35)
-ListFrame.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-ListFrame.ScrollBarThickness = 8
-ListFrame.AutomaticCanvasSize = Enum.AutomaticSize.Y
-Instance.new("UICorner", ListFrame)
-
-local UIListLayout = Instance.new("UIListLayout", ListFrame)
-UIListLayout.Padding = UDim.new(0, 5)
-UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+-- === TextBox besar koordinat ===
+local CoordBox = Instance.new("TextBox", MainFrame)
+CoordBox.Size = UDim2.new(0.6, -10, 0.6, -40)
+CoordBox.Position = UDim2.new(0, 5, 0, 35)
+CoordBox.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+CoordBox.ClearTextOnFocus = false
+CoordBox.MultiLine = true
+CoordBox.TextXAlignment = Enum.TextXAlignment.Left
+CoordBox.TextYAlignment = Enum.TextYAlignment.Top
+CoordBox.Font = Enum.Font.Code
+CoordBox.TextSize = 14
+CoordBox.TextColor3 = Color3.fromRGB(255,255,255)
+CoordBox.Text = ""
+Instance.new("UICorner", CoordBox)
 
 -- === Panel kanan tombol ===
 local RightPanel = Instance.new("Frame", MainFrame)
@@ -74,12 +75,12 @@ RightPanel.Size = UDim2.new(0.4, -10, 0.6, -40)
 RightPanel.Position = UDim2.new(0.6, 5, 0, 35)
 RightPanel.BackgroundTransparency = 1
 
-local function createBtn(text, order)
+local function createBtn(text, order, color)
     local btn = Instance.new("TextButton", RightPanel)
     btn.Size = UDim2.new(1, 0, 0, 30)
     btn.Position = UDim2.new(0, 0, 0, (order - 1) * 35)
     btn.Text = text
-    btn.BackgroundColor3 = Color3.fromRGB(0,120,255)
+    btn.BackgroundColor3 = color or Color3.fromRGB(0,120,255)
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     btn.Font = Enum.Font.SourceSansBold
     btn.TextSize = 16
@@ -90,11 +91,8 @@ end
 local SaveBtn = createBtn("Save", 1)
 local UndoBtn = createBtn("Undo", 2)
 local RedoBtn = createBtn("Redo", 3)
-local RepeatBtn = createBtn("Repeat", 4)
-local RespawnBtn = createBtn("Respawn", 5)
-
-RepeatBtn.BackgroundColor3 = Color3.fromRGB(200,0,0)
-RespawnBtn.BackgroundColor3 = Color3.fromRGB(200,0,0)
+local RepeatBtn = createBtn("Repeat", 4, Color3.fromRGB(200,0,0))
+local RespawnBtn = createBtn("Respawn", 5, Color3.fromRGB(200,0,0))
 
 -- === Bottom bar ===
 local BottomFrame = Instance.new("Frame", MainFrame)
@@ -158,22 +156,14 @@ local function updateProgress(current, total)
     end
 end
 
-local function addCoord(v3)
-    table.insert(coords, v3)
-    redoStack = {}
-
-    local label = Instance.new("TextLabel", ListFrame)
-    label.Size = UDim2.new(1, -5, 0, 25)
-    label.Name = "teleport " .. #coords
-    label.Text = "teleport " .. #coords
-    label.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-    label.TextColor3 = Color3.fromRGB(255, 255, 255)
-    label.Font = Enum.Font.SourceSans
-    label.TextSize = 14
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.LayoutOrder = #coords
-    Instance.new("UICorner", label)
-
+local function parseCoords()
+    coords = {}
+    for line in CoordBox.Text:gmatch("[^\r\n]+") do
+        local x,y,z = line:match("([%-%d%.]+)%s*,%s*([%-%d%.]+)%s*,%s*([%-%d%.]+)")
+        if x and y and z then
+            table.insert(coords, Vector3.new(tonumber(x), tonumber(y), tonumber(z)))
+        end
+    end
     updateProgress(0, #coords)
 end
 
@@ -191,6 +181,7 @@ local function teleportToCoords()
     running = true
     teleportThread = coroutine.wrap(function()
         while running do
+            parseCoords()
             for i, v in ipairs(coords) do
                 if not running then break end
                 if LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
@@ -218,49 +209,33 @@ end
 SaveBtn.MouseButton1Click:Connect(function()
     if LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
         local pos = LP.Character.HumanoidRootPart.Position
-        addCoord(Vector3.new(
+        CoordBox.Text = CoordBox.Text .. string.format("%s, %s, %s\n",
             math.floor(pos.X*100)/100,
             math.floor(pos.Y*100)/100,
             math.floor(pos.Z*100)/100
-        ))
+        )
     end
 end)
 
 UndoBtn.MouseButton1Click:Connect(function()
-    if #coords > 0 then
-        local lastCoord = table.remove(coords)
-        table.insert(redoStack, lastCoord)
-
-        local lbl = ListFrame:FindFirstChild("teleport " .. (#coords+1))
-        if lbl then lbl:Destroy() end
-
-        updateProgress(0, #coords)
+    local lines = {}
+    for line in CoordBox.Text:gmatch("[^\r\n]+") do
+        table.insert(lines, line)
+    end
+    if #lines > 0 then
+        table.insert(redoStack, table.remove(lines))
+        CoordBox.Text = table.concat(lines, "\n")
     end
 end)
 
 RedoBtn.MouseButton1Click:Connect(function()
     if #redoStack > 0 then
-        local coord = table.remove(redoStack)
-        table.insert(coords, coord)
-
-        local label = Instance.new("TextLabel", ListFrame)
-        label.Size = UDim2.new(1, -5, 0, 25)
-        label.Name = "teleport " .. #coords
-        label.Text = "teleport " .. #coords
-        label.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-        label.TextColor3 = Color3.fromRGB(255, 255, 255)
-        label.Font = Enum.Font.SourceSans
-        label.TextSize = 14
-        label.TextXAlignment = Enum.TextXAlignment.Left
-        label.LayoutOrder = #coords
-        Instance.new("UICorner", label)
-
-        updateProgress(0, #coords)
+        CoordBox.Text = CoordBox.Text .. (CoordBox.Text == "" and "" or "\n") .. table.remove(redoStack)
     end
 end)
 
 StartBtn.MouseButton1Click:Connect(function()
-    if not running and #coords > 0 then
+    if not running then
         teleportToCoords()
     end
 end)
@@ -271,12 +246,12 @@ end)
 
 RepeatBtn.MouseButton1Click:Connect(function()
     repeatOn = not repeatOn
-    RepeatBtn.BackgroundColor3 = repeatOn and Color3.fromRGB(0, 200, 0) or Color3.fromRGB(200, 0, 0)
+    RepeatBtn.BackgroundColor3 = repeatOn and Color3.fromRGB(0,200,0) or Color3.fromRGB(200,0,0)
 end)
 
 RespawnBtn.MouseButton1Click:Connect(function()
     respawnOn = not respawnOn
-    RespawnBtn.BackgroundColor3 = respawnOn and Color3.fromRGB(0, 200, 0) or Color3.fromRGB(200, 0, 0)
+    RespawnBtn.BackgroundColor3 = respawnOn and Color3.fromRGB(0,200,0) or Color3.fromRGB(200,0,0)
 end)
 
 -- Minimize logic
@@ -294,7 +269,7 @@ LP.CharacterAdded:Connect(function(char)
     char:WaitForChild("HumanoidRootPart", 5)
     running = false
     teleportThread = nil
-    if repeatOn and respawnOn and #coords > 0 then
+    if repeatOn and respawnOn then
         teleportToCoords()
     end
 end)
