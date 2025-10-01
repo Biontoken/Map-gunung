@@ -541,7 +541,7 @@ local runService = game:GetService("RunService")
 -- =================== Animasi ===================
 local animations = {
     Idle = 1234567890,     -- ganti ID animasi Idle kalau perlu
-    Fly = 16163745908,     -- ID animasi Fly
+    Fly = 3337994105,     -- ID animasi Fly
 }
 
 local animTracks = {}
@@ -831,3 +831,4 @@ UnanchorBtn.MouseButton1Click:Connect(function()
         stopUnanchor()
     end
 end)
+
