@@ -1,0 +1,203 @@
+local player = game.Players.LocalPlayer
+local aktif = false
+local folder, attachment1, koneksi1
+local RADIUS = 500
+local targetParts = {}
+local highlights = {}
+local ScreenGui, MainFrame
+
+-- GUI Setup
+ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Parent = player:WaitForChild("PlayerGui")
+ScreenGui.ResetOnSpawn = false
+
+MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0,180,0,120) -- kecilkan GUI
+MainFrame.Position = UDim2.new(0,20,0,20)
+MainFrame.BackgroundColor3 = Color3.fromRGB(0,0,0)
+MainFrame.BackgroundTransparency = 0.5
+MainFrame.Parent = ScreenGui
+Instance.new("UICorner", MainFrame).CornerRadius = UDim.new(0,10)
+
+-- Tombol X di pojok kanan atas
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0,24,0,24)
+CloseBtn.Position = UDim2.new(1,-28,0,4)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(255,0,0)
+CloseBtn.Text = "X"
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.TextSize = 16
+CloseBtn.TextColor3 = Color3.fromRGB(255,255,255)
+CloseBtn.Parent = MainFrame
+Instance.new("UICorner", CloseBtn).CornerRadius = UDim.new(0,4)
+
+local StatusLabel = Instance.new("TextLabel")
+StatusLabel.Size = UDim2.new(1,0,0,24)
+StatusLabel.Position = UDim2.new(0,0,0,4)
+StatusLabel.BackgroundTransparency = 1
+StatusLabel.Text = "Status: OFF"
+StatusLabel.TextColor3 = Color3.fromRGB(255,255,255)
+StatusLabel.Font = Enum.Font.GothamBold
+StatusLabel.TextSize = 14
+StatusLabel.Parent = MainFrame
+
+local ToggleBtn = Instance.new("TextButton")
+ToggleBtn.Size = UDim2.new(0,140,0,28)
+ToggleBtn.Position = UDim2.new(0,20,0,32)
+ToggleBtn.BackgroundColor3 = Color3.fromRGB(255,0,0)
+ToggleBtn.Text = "ON / OFF"
+ToggleBtn.Font = Enum.Font.GothamBold
+ToggleBtn.TextSize = 14
+ToggleBtn.TextColor3 = Color3.fromRGB(255,255,255)
+ToggleBtn.Parent = MainFrame
+Instance.new("UICorner", ToggleBtn).CornerRadius = UDim.new(0,6)
+
+local ScanBtn = Instance.new("TextButton")
+ScanBtn.Size = UDim2.new(0,140,0,28)
+ScanBtn.Position = UDim2.new(0,20,0,64)
+ScanBtn.BackgroundColor3 = Color3.fromRGB(0,0,255)
+ScanBtn.Text = "SCAN PARTS"
+ScanBtn.Font = Enum.Font.GothamBold
+ScanBtn.TextSize = 14
+ScanBtn.TextColor3 = Color3.fromRGB(255,255,255)
+ScanBtn.Parent = MainFrame
+Instance.new("UICorner", ScanBtn).CornerRadius = UDim.new(0,6)
+
+-- Fungsi scan parts
+local function scanParts()
+    targetParts = {}
+    local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+    if not root then return end
+
+    for _, part in pairs(workspace:GetDescendants()) do
+        if part:IsA("BasePart") and not part.Anchored and not part:IsDescendantOf(player.Character) then
+            local dist = (part.Position - root.Position).Magnitude
+            if dist <= RADIUS then
+                table.insert(targetParts, part)
+
+                -- Buat highlight jika belum ada
+                if not highlights[part] or not highlights[part].Parent then
+                    local hl = Instance.new("Highlight")
+                    hl.FillColor = Color3.fromRGB(255, 255, 0)
+                    hl.FillTransparency = 0.5
+                    hl.OutlineColor = Color3.fromRGB(255,255,255)
+                    hl.OutlineTransparency = 0.3
+                    hl.Parent = workspace
+                    hl.Adornee = part
+                    highlights[part] = hl
+                end
+            end
+        end
+    end
+end
+
+-- Fungsi physics
+local function applyForce()
+    for _, part in pairs(targetParts) do
+        if part and part.Parent then
+            part.CanCollide = false
+
+            -- Hapus body movers lama
+            for _, x in next, part:GetChildren() do
+                if x:IsA("BodyAngularVelocity") or x:IsA("BodyForce") or x:IsA("BodyGyro") 
+                or x:IsA("BodyPosition") or x:IsA("BodyThrust") or x:IsA("BodyVelocity")
+                or x:IsA("RocketPropulsion") or x:IsA("Torque") or x:IsA("AlignPosition") then
+                    x:Destroy()
+                end
+            end
+
+            -- Buat Torque & Align baru
+            local torque = Instance.new("Torque", part)
+            torque.Torque = Vector3.new(100000, 100000, 100000)
+            local align = Instance.new("AlignPosition", part)
+            local at2 = Instance.new("Attachment", part)
+            torque.Attachment0 = at2
+            align.MaxForce = 9999999999999999
+            align.MaxVelocity = math.huge
+            align.Responsiveness = 200
+            align.Attachment0 = at2
+            if attachment1 then
+                align.Attachment1 = attachment1
+            end
+
+            -- Gerakkan part ke attachment
+            if attachment1 then
+                local dist = (part.Position - attachment1.WorldPosition).Magnitude
+                if dist <= RADIUS then
+                    local arah = (attachment1.WorldPosition - part.Position).Unit
+                    part.AssemblyLinearVelocity = arah * 200
+                end
+            end
+        end
+    end
+end
+
+-- Mulai unanchor
+local function mulaiUnanchor()
+    folder = Instance.new("Folder", workspace)
+    local part = Instance.new("Part", folder)
+    attachment1 = Instance.new("Attachment", part)
+    part.Anchored = true
+    part.CanCollide = false
+    part.Transparency = 0
+
+    task.spawn(function()
+        while aktif and task.wait() do
+            for _, pl in next, game.Players:GetPlayers() do
+                if pl ~= player then
+                    pl.MaximumSimulationRadius = 0
+                    sethiddenproperty(pl, "SimulationRadius", 0)
+                end
+            end
+            player.MaximumSimulationRadius = math.pow(math.huge, math.huge)
+            setsimulationradius(math.huge)
+        end
+    end)
+
+    koneksi1 = game:GetService("RunService").Stepped:Connect(function()
+        if #targetParts > 0 then
+            applyForce()
+        end
+    end)
+end
+
+local function stopUnanchor()
+    if koneksi1 then koneksi1:Disconnect() end
+    if folder then
+        folder:Destroy()
+    end
+    folder, attachment1 = nil, nil
+
+    -- Hapus semua highlight
+    for _, hl in pairs(highlights) do
+        if hl and hl.Parent then hl:Destroy() end
+    end
+    highlights = {}
+    targetParts = {}
+end
+
+-- Tombol ON/OFF
+ToggleBtn.MouseButton1Click:Connect(function()
+    aktif = not aktif
+    if aktif then
+        ToggleBtn.BackgroundColor3 = Color3.fromRGB(0,255,0)
+        StatusLabel.Text = "Status: ON"
+        mulaiUnanchor()
+    else
+        ToggleBtn.BackgroundColor3 = Color3.fromRGB(255,0,0)
+        StatusLabel.Text = "Status: OFF"
+        stopUnanchor()
+    end
+end)
+
+-- Tombol SCAN
+ScanBtn.MouseButton1Click:Connect(function()
+    scanParts()
+end)
+
+-- Tombol CLOSE
+CloseBtn.MouseButton1Click:Connect(function()
+    aktif = false
+    stopUnanchor()
+    ScreenGui:Destroy()
+end)
