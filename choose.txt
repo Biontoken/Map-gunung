@@ -58,7 +58,7 @@ TeleportButton.Parent = MainFrame
 
 -- LABEL UPDATE
 local UpdateNote = Instance.new("TextLabel")
-UpdateNote.Text = "update : fitur unanchored "
+UpdateNote.Text = "update : fitur free private server "
 UpdateNote.Size = UDim2.new(1, 0, 0, 20)
 UpdateNote.Position = UDim2.new(0, 0, 0, 180)
 UpdateNote.BackgroundTransparency = 1
@@ -132,6 +132,7 @@ TeleportButton.MouseButton1Click:Connect(function()
     loadstring(game:HttpGet("https://raw.githubusercontent.com/Biontoken/Map-gunung/refs/heads/main/teleport.txt"))()
     minimizeGUI() -- otomatis minimize setelah ditekan
 end)
+
 
 
 
