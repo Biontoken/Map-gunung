@@ -8,7 +8,7 @@ local coords = {}
 local undoStack, redoStack = {}
 local running = false
 local repeatOn, respawnOn = false, false
-local flySpeed = 300 -- studs per detik
+local flySpeed = 600 -- studs per detik
 local noclipActive = false
 local noclipConnection
 local flyThread
@@ -353,3 +353,4 @@ LP.CharacterAdded:Connect(function(char)
         flyThroughCoords()
     end
 end)
+
