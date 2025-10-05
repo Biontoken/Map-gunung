@@ -1,0 +1,1026 @@
+local Player = game.Players.LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
+local TweenService = game:GetService("TweenService")
+
+-- ScreenGui
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Parent = PlayerGui
+ScreenGui.Enabled = true
+ScreenGui.ResetOnSpawn = false
+
+
+-- Main Frame
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0,260,0,320)
+MainFrame.Position = UDim2.new(0.5,-130,0.5,-160)
+MainFrame.BackgroundColor3 = Color3.fromRGB(0,0,0)
+MainFrame.BackgroundTransparency = 0.1
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.ClipsDescendants = true
+MainFrame.Parent = ScreenGui
+
+local mainCorner = Instance.new("UICorner")
+mainCorner.CornerRadius = UDim.new(0,10)
+mainCorner.Parent = MainFrame
+
+-- Border
+local mainStroke = Instance.new("UIStroke")
+mainStroke.Color = Color3.fromRGB(255,255,255)
+mainStroke.Thickness = 0.5
+mainStroke.Parent = MainFrame
+
+-- Gradient Background
+local uiGradient = Instance.new("UIGradient")
+uiGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(90,0,180)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(30,0,60))
+}
+uiGradient.Rotation = 90
+uiGradient.Parent = MainFrame
+
+-- Navbar
+local Navbar = Instance.new("Frame")
+Navbar.Size = UDim2.new(1,0,0,50)
+Navbar.BackgroundColor3 = Color3.fromRGB(0,0,0)
+Navbar.Parent = MainFrame
+
+local navCorner = Instance.new("UICorner")
+navCorner.CornerRadius = UDim.new(0,20)
+navCorner.Parent = Navbar
+
+-- Navbar Title
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Size = UDim2.new(1,-60,1,0)
+TitleLabel.Position = UDim2.new(0,15,0,0)
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Text = "JSY CHEAT"
+TitleLabel.Font = Enum.Font.GothamBlack
+TitleLabel.TextSize = 18
+TitleLabel.TextColor3 = Color3.fromRGB(255,255,255)
+TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+TitleLabel.Parent = Navbar
+
+-- Tombol Minimize
+local MinimizeBtn = Instance.new("TextButton")
+MinimizeBtn.Size = UDim2.new(0,35,0,35)
+MinimizeBtn.Position = UDim2.new(1,-85,0.5,-17) -- di sebelah kiri tombol X
+MinimizeBtn.BackgroundColor3 = Color3.fromRGB(255,255,255)
+MinimizeBtn.Text = "-"
+MinimizeBtn.Font = Enum.Font.GothamBold
+MinimizeBtn.TextSize = 20
+MinimizeBtn.TextColor3 = Color3.fromRGB(0,0,0)
+MinimizeBtn.Parent = Navbar
+Instance.new("UICorner",MinimizeBtn).CornerRadius = UDim.new(1,0)
+
+
+-- X Button
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0,35,0,35)
+CloseBtn.Position = UDim2.new(1,-45,0.5,-17)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(240,8,8)
+CloseBtn.Text = "X"
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.TextSize = 20
+CloseBtn.TextColor3 = Color3.fromRGB(255,255,255)
+CloseBtn.Parent = Navbar
+Instance.new("UICorner",CloseBtn).CornerRadius = UDim.new(1,0)
+
+-- ScrollFrame
+local ScrollFrame = Instance.new("ScrollingFrame")
+ScrollFrame.Size = UDim2.new(1,0,1,-65)
+ScrollFrame.Position = UDim2.new(0,0,0,55)
+ScrollFrame.BackgroundTransparency = 1
+ScrollFrame.ScrollBarThickness = 8
+ScrollFrame.ScrollBarImageTransparency = 1
+ScrollFrame.ScrollingDirection = Enum.ScrollingDirection.Y
+ScrollFrame.CanvasSize = UDim2.new(0,0,0,0)
+ScrollFrame.Parent = MainFrame
+
+local UIListLayout = Instance.new("UIListLayout")
+UIListLayout.Parent = ScrollFrame
+UIListLayout.Padding = UDim.new(0,6)
+UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    ScrollFrame.CanvasSize = UDim2.new(0,0,0,UIListLayout.AbsoluteContentSize.Y + 10)
+end)
+
+-- Floating Mini GUI (JSY)
+local MiniFrame = Instance.new("TextButton")
+MiniFrame.Size = UDim2.new(0,60,0,30)
+MiniFrame.Position = UDim2.new(1,-80,0,10) -- pojok kanan atas
+MiniFrame.BackgroundColor3 = Color3.fromRGB(255,255,255)
+MiniFrame.Text = "JSY"
+MiniFrame.Font = Enum.Font.GothamBlack
+MiniFrame.TextSize = 18
+MiniFrame.TextColor3 = Color3.fromRGB(0,0,0)
+MiniFrame.TextStrokeTransparency = 0.3
+MiniFrame.Visible = false
+MiniFrame.Active = true
+MiniFrame.Draggable = true
+MiniFrame.Parent = ScreenGui
+local miniCorner = Instance.new("UICorner")
+miniCorner.CornerRadius = UDim.new(0,10)
+miniCorner.Parent = MiniFrame
+
+-- Gradient tulisan JSY
+local gradient = Instance.new("UIGradient")
+gradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(255,255,255)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(255,255,255))
+}
+gradient.Rotation = 90
+gradient.Parent = MiniFrame
+
+-- Logika close & reopen
+CloseBtn.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+end)
+
+MinimizeBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = false
+    MiniFrame.Visible = true
+end)
+
+MiniFrame.MouseButton1Click:Connect(function()
+    MainFrame.Visible = true
+    MiniFrame.Visible = false
+end)
+
+
+---------------------------------------------------
+-- Semua tombol dan fitur masih sama kayak sebelumnya
+---------------------------------------------------
+
+-- Fungsi bikin tombol
+local function createButton(icon,text,url)
+    local btn = Instance.new("TextButton")
+    btn.Size = UDim2.new(0, 160, 0, 32)
+    btn.BackgroundColor3 = Color3.fromRGB(255,255,255)
+    btn.Text = icon.."  "..text
+    btn.TextSize = 14
+    btn.Font = Enum.Font.GothamBlack
+    btn.TextColor3 = Color3.fromRGB(0,0,0)
+    btn.TextXAlignment = Enum.TextXAlignment.Center
+    Instance.new("UICorner",btn).CornerRadius = UDim.new(0,10)
+
+    btn.MouseEnter:Connect(function()
+        TweenService:Create(btn,TweenInfo.new(0.2),{BackgroundColor3=Color3.fromRGB(50,0,130)}):Play()
+    end)
+    btn.MouseLeave:Connect(function()
+        TweenService:Create(btn,TweenInfo.new(0.2),{BackgroundColor3=Color3.fromRGB(255,255,255)}):Play()
+    end)
+
+    btn.MouseButton1Click:Connect(function()
+        if url ~= "" then
+            local success, response = pcall(function()
+                return game:HttpGet(url)
+            end)
+            if success and response then
+                local func, err = loadstring(response)
+                if func then func() else warn("Loadstring error: "..tostring(err)) end
+            else warn("HttpGet failed for "..tostring(url)) end
+        end
+    end)
+
+    btn.Parent = ScrollFrame
+end
+
+-- Tombol Script
+createButton("","spectator","https://raw.githubusercontent.com/Biontoken/Map-gunung/refs/heads/main/targetkick.txt")
+createButton("","double jump","https://raw.githubusercontent.com/Biontoken/Map-gunung/refs/heads/main/doublejump.txt")
+createButton("","jalan udara","https://raw.githubusercontent.com/Biontoken/Map-gunung/refs/heads/main/Airwalk.txt")
+createButton("","rec","https://raw.githubusercontent.com/Biontoken/Map-gunung/refs/heads/main/rec.txt")
+
+-- Lampu Kepala Putih
+local Player = game.Players.LocalPlayer
+
+-- Tombol Lampu Kepala
+local LampBtn = Instance.new("TextButton")
+LampBtn.Size = UDim2.new(0,160,0,32)
+LampBtn.BackgroundColor3 = Color3.fromRGB(255,255,255)
+LampBtn.Text = "Lampu"
+LampBtn.Font = Enum.Font.GothamBlack
+LampBtn.TextSize = 14
+LampBtn.TextColor3 = Color3.fromRGB(0,0,0)
+Instance.new("UICorner", LampBtn).CornerRadius = UDim.new(0,10)
+LampBtn.Parent = ScrollFrame
+
+local lampOn = false
+local headLamp = nil
+
+-- Buat lampu kepala
+local function addHeadLamp(char)
+    local head = char:FindFirstChild("Head")
+    if not head then return end
+    if char:FindFirstChild("HeadLamp") then return end
+
+    headLamp = Instance.new("Part")
+    headLamp.Name = "HeadLamp"
+    headLamp.Size = Vector3.new(0.5,0.5,0.5)
+    headLamp.Shape = Enum.PartType.Ball
+    headLamp.Color = Color3.fromRGB(255,255,255) -- putih
+    headLamp.Material = Enum.Material.Neon
+    headLamp.Anchored = false
+    headLamp.CanCollide = false
+    headLamp.CFrame = head.CFrame * CFrame.new(0,0.8,0) -- di atas kepala
+    headLamp.Parent = char
+
+    local weld = Instance.new("WeldConstraint")
+    weld.Part0 = head
+    weld.Part1 = headLamp
+    weld.Parent = headLamp
+
+    local light = Instance.new("PointLight")
+    light.Color = Color3.fromRGB(255,255,255)
+    light.Range = 100
+    light.Brightness = 2
+    light.Parent = headLamp
+end
+
+-- Hapus lampu kepala
+local function removeHeadLamp()
+    if headLamp and headLamp.Parent then
+        headLamp:Destroy()
+    end
+    headLamp = nil
+end
+
+-- Toggle Lampu
+LampBtn.MouseButton1Click:Connect(function()
+    lampOn = not lampOn
+    local char = Player.Character or Player.CharacterAdded:Wait()
+    if lampOn then
+        addHeadLamp(char)
+        LampBtn.BackgroundColor3 = Color3.fromRGB(255,255,0)
+    else
+        removeHeadLamp()
+        LampBtn.BackgroundColor3 = Color3.fromRGB(255,255,255)
+    end
+end)
+
+-- Kalau respawn, otomatis pasang lagi kalau tombol masih ON
+Player.CharacterAdded:Connect(function(char)
+    if lampOn then
+        task.wait(1) -- tunggu body spawn biar Head sudah ada
+        addHeadLamp(char)
+    end
+end)
+
+
+local Player = game.Players.LocalPlayer
+
+-- GUI utama (tombol untuk memunculkan / menghapus item speed)
+local MainBtn = Instance.new("TextButton")
+MainBtn.Size = UDim2.new(0,160,0,32)
+MainBtn.BackgroundColor3 = Color3.fromRGB(255,255,255)
+MainBtn.Text = "Speed"
+MainBtn.Font = Enum.Font.GothamBlack
+MainBtn.TextSize = 14
+MainBtn.TextColor3 = Color3.fromRGB(0,0,0)
+Instance.new("UICorner", MainBtn).CornerRadius = UDim.new(0,10)
+MainBtn.Parent = ScrollFrame
+
+-- Variabel item speed
+local SpeedGui = nil
+local SpeedBtn = nil
+local speedOn = false
+local selendangPart = nil
+local trail = nil
+
+-- Warna pelangi
+local colors = {
+    Color3.fromRGB(255,0,0),
+    Color3.fromRGB(255,127,0),
+    Color3.fromRGB(255,255,0),
+    Color3.fromRGB(0,255,0),
+    Color3.fromRGB(0,0,255),
+    Color3.fromRGB(75,0,130),
+    Color3.fromRGB(148,0,211)
+}
+
+local function lerpColor(c1, c2, t)
+    return Color3.new(
+        c1.R + (c2.R - c1.R) * t,
+        c1.G + (c2.G - c1.G) * t,
+        c1.B + (c2.B - c1.B) * t
+    )
+end
+
+-- Buat selendang
+-- Buat selendang
+local function addSelendang(char)
+    -- kalau ada selendang lama, hapus dulu
+    if selendangPart then
+        selendangPart:Destroy()
+        selendangPart = nil
+        trail = nil
+    end
+
+    local torso = char:FindFirstChild("HumanoidRootPart") or char:FindFirstChild("UpperTorso")
+    if not torso then return end
+
+    selendangPart = Instance.new("Part")
+    selendangPart.Name = "SelendangPart"
+    selendangPart.Size = Vector3.new(0.5,0.5,0.5)
+    selendangPart.Transparency = 1
+    selendangPart.Anchored = false
+    selendangPart.CanCollide = false
+    selendangPart.CFrame = torso.CFrame
+    selendangPart.Parent = char
+
+    local weld = Instance.new("WeldConstraint")
+    weld.Part0 = torso
+    weld.Part1 = selendangPart
+    weld.Parent = selendangPart
+
+    -- Bikin 5 trail berjajar dari atas ke bawah
+    local trails = {}
+    local spacing = -0.04 -- jarak antar trail ke bawah
+    local startY = 0.5   -- posisi trail pertama (paling atas)
+
+    for i = 1, 50 do
+        local yPos = startY + (i-1) * spacing
+
+        local attLeft = Instance.new("Attachment", selendangPart)
+        attLeft.Position = Vector3.new(-1, yPos, 0)
+
+        local attRight = Instance.new("Attachment", selendangPart)
+        attRight.Position = Vector3.new(1, yPos, 0)
+
+        local newTrail = Instance.new("Trail")
+        newTrail.Attachment0 = attLeft
+        newTrail.Attachment1 = attRight
+        newTrail.Lifetime = 0.6
+        newTrail.MinLength = 0.1
+        newTrail.LightEmission = 1
+        newTrail.Transparency = NumberSequence.new(0,1)
+        newTrail.WidthScale = NumberSequence.new(0.5,0)
+        newTrail.Parent = selendangPart
+
+        table.insert(trails, newTrail)
+    end
+
+    -- Animasi pelangi
+    task.spawn(function()
+        local step = 0
+        while speedOn and selendangPart and selendangPart.Parent do
+            local idx1 = math.floor(step) % #colors + 1
+            local idx2 = (idx1 % #colors) + 1
+            local t = step % 1
+            local col = lerpColor(colors[idx1], colors[idx2], t)
+
+            for _, tr in ipairs(trails) do
+                tr.Color = ColorSequence.new(col)
+            end
+
+            step = step + 0.02
+            task.wait(0.03)
+        end
+    end)
+end
+
+-- Hapus selendang
+local function removeSelendang()
+    if selendangPart then
+        selendangPart:Destroy()
+        selendangPart = nil
+        trail = nil
+    end
+end
+
+-- Buat tombol Speed
+local function createSpeedItem()
+    if SpeedBtn then return end -- biar nggak double
+
+    SpeedGui = Instance.new("ScreenGui", Player:WaitForChild("PlayerGui"))
+    SpeedGui.Name = "SpeedSelendangGui"
+    SpeedGui.ResetOnSpawn = false
+    
+
+    SpeedBtn = Instance.new("TextButton")
+    SpeedBtn.Size = UDim2.new(0,120,0,40)
+    SpeedBtn.Position = UDim2.new(0.5,130,1,-100) -- kanan tombol Sign
+    SpeedBtn.BackgroundColor3 = Color3.fromRGB(10,10,10)
+    SpeedBtn.Text = "Speed"
+    SpeedBtn.Font = Enum.Font.GothamBlack
+    SpeedBtn.TextSize = 14
+    SpeedBtn.TextColor3 = Color3.fromRGB(255,255,255)
+    Instance.new("UICorner", SpeedBtn).CornerRadius = UDim.new(0,10)
+    SpeedBtn.Parent = SpeedGui
+
+    SpeedBtn.MouseButton1Click:Connect(function()
+        speedOn = not speedOn
+        local char = Player.Character or Player.CharacterAdded:Wait()
+        local hum = char:FindFirstChild("Humanoid")
+        if speedOn then
+            if hum then hum.WalkSpeed = 48 end
+            addSelendang(char)
+            SpeedBtn.BackgroundColor3 = Color3.fromRGB(255,255,0)
+        else
+            if hum then hum.WalkSpeed = 16 end
+            removeSelendang()
+            SpeedBtn.BackgroundColor3 = Color3.fromRGB(10,10,10)
+        end
+    end)
+
+    -- Supaya jalan saat respawn
+    Player.CharacterAdded:Connect(function(char)
+        local hum = char:WaitForChild("Humanoid")
+        task.wait(0.2) -- biar character siap
+        if speedOn then
+            hum.WalkSpeed = 48
+            addSelendang(char) -- bikin ulang selendang saat respawn
+            if SpeedBtn then
+                SpeedBtn.BackgroundColor3 = Color3.fromRGB(255,255,0)
+            end
+        else
+            hum.WalkSpeed = 16
+            if SpeedBtn then
+                SpeedBtn.BackgroundColor3 = Color3.fromRGB(10,10,10)
+            end
+        end
+    end)
+end
+
+-- Hapus tombol Speed
+local function destroySpeedItem()
+    speedOn = false
+    removeSelendang()
+
+    -- Reset speed ke default
+    local char = Player.Character
+    if char then
+        local hum = char:FindFirstChild("Humanoid")
+        if hum then
+            hum.WalkSpeed = 16
+        end
+    end
+
+    if SpeedGui then
+        SpeedGui:Destroy()
+        SpeedGui = nil
+        SpeedBtn = nil
+    end
+end
+
+-- Tekan tombol utama untuk toggle item Speed
+local itemVisible = false
+MainBtn.MouseButton1Click:Connect(function()
+    if not itemVisible then
+        createSpeedItem()
+        MainBtn.BackgroundColor3 = Color3.fromRGB(255,255,0)
+        MainBtn.Text = "Hapus Speed"
+        itemVisible = true
+    else
+        destroySpeedItem()
+        MainBtn.BackgroundColor3 = Color3.fromRGB(255,255,255)
+        MainBtn.Text = "Dapatkan Speed"
+        itemVisible = false
+    end
+end)
+
+
+-- 🔹 Fling
+local FlingBtn = Instance.new("TextButton")
+FlingBtn.Size = UDim2.new(0,160,0,32)
+FlingBtn.BackgroundColor3 = Color3.fromRGB(255,255,255)
+FlingBtn.Text = "tendang"
+FlingBtn.Font = Enum.Font.GothamBlack
+FlingBtn.TextSize = 14
+FlingBtn.TextColor3 = Color3.fromRGB(0,0,0)
+Instance.new("UICorner", FlingBtn).CornerRadius = UDim.new(0,10)
+FlingBtn.Parent = ScrollFrame
+
+local RunService = game:GetService("RunService")
+local Players = game:GetService("Players")
+local hiddenfling = false
+local flingThread
+
+local function fling()
+    local lp = Players.LocalPlayer
+    while hiddenfling do
+        RunService.Heartbeat:Wait()
+        local hrp = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            local vel = hrp.Velocity
+            hrp.Velocity = vel * 99999 + Vector3.new(0, 99999, 0)
+            RunService.RenderStepped:Wait()
+            hrp.Velocity = vel
+        end
+    end
+end
+
+FlingBtn.MouseButton1Click:Connect(function()
+    hiddenfling = not hiddenfling
+    if hiddenfling then
+        FlingBtn.Text = "tendang"
+        FlingBtn.BackgroundColor3 = Color3.fromRGB(255,255,0)
+        flingThread = coroutine.create(fling)
+        coroutine.resume(flingThread)
+    else
+        FlingBtn.Text = "tendang"
+        FlingBtn.BackgroundColor3 = Color3.fromRGB(255,255,255)
+    end
+end)
+
+
+-- =================== Fly Final Dengan Animasi + ScrollFrame Button ===================
+local flying = false
+local flySpeed = 100
+local pressed = {Up=false,Down=false,Left=false,Right=false}
+local bv, bg
+
+local player = game.Players.LocalPlayer
+local character = player.Character or player.CharacterAdded:Wait()
+local humanoid = character:WaitForChild("Humanoid")
+local root = character:WaitForChild("HumanoidRootPart")
+local runService = game:GetService("RunService")
+
+-- =================== Animasi ===================
+local animations = {
+    Idle = 0,     -- ganti ID animasi Idle kalau perlu
+    Fly = 3337994105,     -- ID animasi Fly
+}
+
+local animTracks = {}
+local animator
+
+local function setupAnimator(hum)
+    animator = hum:FindFirstChildOfClass("Animator")
+    if not animator then
+        animator = Instance.new("Animator")
+        animator.Parent = hum
+    end
+
+    animTracks = {}
+    for name,id in pairs(animations) do
+        if id ~= 0 then
+            local anim = Instance.new("Animation")
+            anim.AnimationId = "rbxassetid://"..id
+            local track = animator:LoadAnimation(anim)
+            track.Priority = Enum.AnimationPriority.Action
+            track.Looped = true
+            track:AdjustSpeed(1)
+            animTracks[name] = track
+        end
+    end
+
+    if animTracks.Idle then
+        animTracks.Idle:Play()
+    end
+end
+
+setupAnimator(humanoid)
+
+-- =================== DPad ===================
+local gui = Instance.new("ScreenGui")
+gui.Name = "FlyGui"
+gui.Parent = game:GetService("CoreGui")
+
+local DPad = Instance.new("Frame")
+DPad.Size = UDim2.new(0,150,0,150)
+DPad.Position = UDim2.new(0,20,1,-180)
+DPad.BackgroundTransparency = 1
+DPad.Visible = false
+DPad.Parent = gui
+
+local function createButton(name,pos)
+    local btn = Instance.new("TextButton")
+    btn.Name = name
+    btn.Size = UDim2.new(0,50,0,50)
+    btn.Position = pos
+    btn.BackgroundColor3 = Color3.fromRGB(0,0,0)
+    btn.BackgroundTransparency = 0.5
+    btn.TextColor3 = Color3.fromRGB(255,255,255)
+    btn.Font = Enum.Font.GothamBold
+    btn.Text = name
+    btn.TextSize = 30
+    btn.Parent = DPad
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0,10)
+    return btn
+end
+
+local UpBtn = createButton("↑", UDim2.new(0.5,-25,0,0))
+local DownBtn = createButton("↓", UDim2.new(0.5,-25,1,-50))
+local LeftBtn = createButton("←", UDim2.new(0,0,0.5,-25))
+local RightBtn = createButton("→", UDim2.new(1,-50,0.5,-25))
+
+local function setupButton(btn,key)
+    btn.MouseButton1Down:Connect(function() pressed[key]=true end)
+    btn.MouseButton1Up:Connect(function() pressed[key]=false end)
+end
+setupButton(UpBtn,"Up")
+setupButton(DownBtn,"Down")
+setupButton(LeftBtn,"Left")
+setupButton(RightBtn,"Right")
+
+-- =================== Tombol Fly di ScrollFrame ===================
+-- Pastikan "ScrollFrame" SUDAH ADA sebagai variabel
+local FlyBtn = Instance.new("TextButton")
+FlyBtn.Size = UDim2.new(0,160,0,32)
+FlyBtn.BackgroundColor3 = Color3.fromRGB(255,255,255)
+FlyBtn.Text = "Fly"
+FlyBtn.Font = Enum.Font.GothamBlack
+FlyBtn.TextSize = 14
+FlyBtn.TextColor3 = Color3.fromRGB(0,0,0)
+Instance.new("UICorner", FlyBtn).CornerRadius = UDim.new(0,10)
+FlyBtn.Parent = ScrollFrame
+
+-- =================== Fungsi Matikan Fly ===================
+local function disableFly()
+    flying = false
+    DPad.Visible = false
+    FlyBtn.Text = "Fly"
+    FlyBtn.BackgroundColor3 = Color3.fromRGB(255,255,255)
+    if bv then bv:Destroy() bv=nil end
+    if bg then bg:Destroy() bg=nil end
+    if animTracks.Fly and animTracks.Fly.IsPlaying then animTracks.Fly:Stop() end
+    if animTracks.Idle and not animTracks.Idle.IsPlaying then animTracks.Idle:Play() end
+end
+
+-- =================== Toggle Fly ===================
+FlyBtn.MouseButton1Click:Connect(function()
+    if flying then
+        disableFly()
+    else
+        flying = true
+        DPad.Visible = true
+        FlyBtn.Text = "Fly"
+        FlyBtn.BackgroundColor3 = Color3.fromRGB(255,255,0)
+
+        if animTracks.Idle and animTracks.Idle.IsPlaying then
+            animTracks.Idle:Stop()
+        end
+        if animTracks.Fly and not animTracks.Fly.IsPlaying then
+            animTracks.Fly:Play()
+        end
+    end
+end)
+
+-- =================== Fly Movement ===================
+runService.RenderStepped:Connect(function()
+    if flying then
+        if not bv then
+            bv = Instance.new("BodyVelocity")
+            bv.MaxForce = Vector3.new(1e5,1e5,1e5)
+            bv.Velocity = Vector3.zero
+            bv.Parent = root
+        end
+        if not bg then
+            bg = Instance.new("BodyGyro")
+            bg.MaxTorque = Vector3.new(1e5,1e5,1e5)
+            bg.CFrame = root.CFrame
+            bg.Parent = root
+        end
+
+        local cam = workspace.CurrentCamera.CFrame
+        local moveDir = Vector3.zero
+        if pressed.Up then moveDir = moveDir + cam.LookVector end
+        if pressed.Down then moveDir = moveDir - cam.LookVector end
+        if pressed.Left then moveDir = moveDir - cam.RightVector end
+        if pressed.Right then moveDir = moveDir + cam.RightVector end
+
+        if moveDir.Magnitude > 0 then moveDir = moveDir.Unit end
+        bv.Velocity = moveDir * flySpeed
+
+        local lookVec = Vector3.new(bv.Velocity.X,0,bv.Velocity.Z)
+        if lookVec.Magnitude == 0 then
+            lookVec = Vector3.new(cam.LookVector.X,0,cam.LookVector.Z)
+        end
+        bg.CFrame = CFrame.new(root.Position, root.Position + lookVec)
+    end
+end)
+
+-- =================== Reset Saat Mati ===================
+humanoid.Died:Connect(disableFly)
+player.CharacterAdded:Connect(function(char)
+    character = char
+    humanoid = char:WaitForChild("Humanoid")
+    root = char:WaitForChild("HumanoidRootPart")
+    setupAnimator(humanoid)
+    humanoid.Died:Connect(disableFly)
+end)
+-- 🔹 Unanchor Button
+local UnanchorBtn = Instance.new("TextButton")
+UnanchorBtn.Size = UDim2.new(0,160,0,32)
+UnanchorBtn.BackgroundColor3 = Color3.fromRGB(255,255,255)
+UnanchorBtn.Text = "UNANCHOR"
+UnanchorBtn.Font = Enum.Font.GothamBlack
+UnanchorBtn.TextSize = 14
+UnanchorBtn.TextColor3 = Color3.fromRGB(0,0,0)
+Instance.new("UICorner", UnanchorBtn).CornerRadius = UDim.new(0,10)
+UnanchorBtn.Parent =ScrollFrame
+
+local player = game.Players.LocalPlayer
+local aktif = false
+local folder, attachment1, koneksi1
+local RADIUS = 500
+
+-- Scan part sekitar player
+local function scanParts()
+    local parts = {}
+    local root = player.Character and player.Character:FindFirstChild("HumanoidRootPart")
+    if not root then return parts end
+
+    for _, part in pairs(workspace:GetDescendants()) do
+        if part:IsA("BasePart") 
+        and not part.Anchored 
+        and not part:IsDescendantOf(player.Character) then
+            local dist = (part.Position - root.Position).Magnitude
+            if dist <= RADIUS then
+                table.insert(parts, part)
+            end
+        end
+    end
+    return parts
+end
+
+-- Apply force ke part
+local function applyForce(part)
+    if not part or not part.Parent then return end
+    part.CanCollide = false
+
+    -- hapus body movers lama
+    for _, x in next, part:GetChildren() do
+        if x:IsA("BodyAngularVelocity") or x:IsA("BodyForce") or x:IsA("BodyGyro") 
+        or x:IsA("BodyPosition") or x:IsA("BodyThrust") or x:IsA("BodyVelocity")
+        or x:IsA("RocketPropulsion") then
+            x:Destroy()
+        end
+    end
+
+    if not part:FindFirstChildOfClass("Torque") then
+        local torque = Instance.new("Torque", part)
+        torque.Torque = Vector3.new(100000,100000,100000)
+        local align = Instance.new("AlignPosition", part)
+        local at2 = Instance.new("Attachment", part)
+        torque.Attachment0 = at2
+        align.MaxForce = 9e15
+        align.MaxVelocity = math.huge
+        align.Responsiveness = 200
+        align.Attachment0 = at2
+        if attachment1 then
+            align.Attachment1 = attachment1
+        end
+    end
+
+    if attachment1 then
+        local dist = (part.Position - attachment1.WorldPosition).Magnitude
+        if dist <= RADIUS then
+            local arah = (attachment1.WorldPosition - part.Position).Unit
+            part.AssemblyLinearVelocity = arah * 200
+        end
+    end
+end
+
+-- Mulai Unanchor
+local function mulaiUnanchor()
+    folder = Instance.new("Folder", workspace)
+    local part = Instance.new("Part", folder)
+    part.Anchored = true
+    part.CanCollide = false
+    part.Transparency = 1
+    attachment1 = Instance.new("Attachment", part)
+
+    -- atur simulation radius
+    task.spawn(function()
+        settings().Physics.AllowSleep = false
+        while aktif and task.wait() do
+            for _, pl in next, game.Players:GetPlayers() do
+                if pl ~= player then
+                    pl.MaximumSimulationRadius = 0
+                    sethiddenproperty(pl, "SimulationRadius", 0)
+                end
+            end
+            player.MaximumSimulationRadius = math.pow(math.huge, math.huge)
+            setsimulationradius(math.huge)
+        end
+    end)
+
+    -- loop scan + apply
+    koneksi1 = game:GetService("RunService").Stepped:Connect(function()
+        local list = scanParts()
+        for _, v in pairs(list) do
+            applyForce(v)
+        end
+    end)
+end
+
+-- Stop Unanchor
+local function stopUnanchor()
+    if koneksi1 then koneksi1:Disconnect() end
+    if folder then folder:Destroy() end
+    folder, attachment1 = nil, nil
+end
+
+-- Tombol GUI
+UnanchorBtn.MouseButton1Click:Connect(function()
+    aktif = not aktif
+    if aktif then
+        UnanchorBtn.BackgroundColor3 = Color3.fromRGB(255,255,0)
+        UnanchorBtn.Text = "RUNNING"
+        mulaiUnanchor()
+    else
+        UnanchorBtn.BackgroundColor3 = Color3.fromRGB(255,255,255)
+        UnanchorBtn.Text = "UNANCHOR"
+        stopUnanchor()
+    end
+end)
+
+-- Tombol Anti Lag ON/OFF
+local AntiLagBtn = Instance.new("TextButton")
+AntiLagBtn.Size = UDim2.new(0,160,0,32)
+AntiLagBtn.BackgroundColor3 = Color3.fromRGB(255,255,255)
+AntiLagBtn.Text = "ANTI LAG"
+AntiLagBtn.Font = Enum.Font.GothamBlack
+AntiLagBtn.TextSize = 14
+AntiLagBtn.TextColor3 = Color3.fromRGB(0,0,0)
+Instance.new("UICorner", AntiLagBtn).CornerRadius = UDim.new(0,10)
+AntiLagBtn.Parent = ScrollFrame
+
+-- State
+local antiLagActive = false
+local connections = {}
+local originalStates = {} -- simpan kondisi asli
+
+-- Simpan kondisi asli object
+local function saveState(v)
+	if not originalStates[v] then
+		if v:IsA("Part") or v:IsA("Union") or v:IsA("CornerWedgePart") or v:IsA("TrussPart") or v:IsA("MeshPart") then
+			originalStates[v] = {
+				Material = v.Material,
+				Reflectance = v.Reflectance,
+				TextureID = v:IsA("MeshPart") and v.TextureID or nil
+			}
+		elseif v:IsA("Decal") or v:IsA("Texture") then
+			originalStates[v] = {Transparency = v.Transparency}
+		elseif v:IsA("ParticleEmitter") or v:IsA("Trail") then
+			originalStates[v] = {Lifetime = v.Lifetime, Enabled = v.Enabled}
+		elseif v:IsA("Explosion") then
+			originalStates[v] = {BlastPressure = v.BlastPressure, BlastRadius = v.BlastRadius}
+		elseif v:IsA("Fire") or v:IsA("Smoke") or v:IsA("Sparkles") then
+			originalStates[v] = {Enabled = v.Enabled}
+		elseif v:IsA("Sound") then
+			originalStates[v] = {Playing = v.Playing}
+		elseif v:IsA("Light") or v:IsA("PointLight") or v:IsA("SpotLight") or v:IsA("SurfaceLight") then
+			originalStates[v] = {Enabled = v.Enabled}
+		end
+	end
+end
+
+-- Ubah jadi burik
+local function makeBurik(v)
+	saveState(v)
+
+	if v:IsA("Part") or v:IsA("Union") or v:IsA("CornerWedgePart") or v:IsA("TrussPart") then
+		v.Material = "Plastic"
+		v.Reflectance = 0
+	elseif v:IsA("Decal") or v:IsA("Texture") then
+		v.Transparency = 1
+	elseif v:IsA("ParticleEmitter") or v:IsA("Trail") then
+		v.Lifetime = NumberRange.new(0)
+		v.Enabled = false
+	elseif v:IsA("Explosion") then
+		v.BlastPressure = 1
+		v.BlastRadius = 1
+	elseif v:IsA("Fire") or v:IsA("Smoke") or v:IsA("Sparkles") then
+		v.Enabled = false
+	elseif v:IsA("MeshPart") then
+		v.Material = "Plastic"
+		v.Reflectance = 0
+		v.TextureID = ""
+	elseif v:IsA("Sound") then
+		v.Playing = false
+	elseif v:IsA("Light") or v:IsA("PointLight") or v:IsA("SpotLight") or v:IsA("SurfaceLight") then
+		v.Enabled = false
+	end
+end
+
+-- Aktifkan AntiLag
+local function applyAntiLag()
+	local l = game.Lighting
+	local t = game.Workspace.Terrain
+
+	-- Simpan kondisi terrain & lighting
+	originalStates[t] = {
+		WaterWaveSize = t.WaterWaveSize,
+		WaterWaveSpeed = t.WaterWaveSpeed,
+		WaterReflectance = t.WaterReflectance,
+		WaterTransparency = t.WaterTransparency
+	}
+	originalStates[l] = {
+		GlobalShadows = l.GlobalShadows,
+		FogEnd = l.FogEnd,
+		Brightness = l.Brightness
+	}
+
+	t.WaterWaveSize = 0
+	t.WaterWaveSpeed = 0
+	t.WaterReflectance = 0
+	t.WaterTransparency = 0
+	l.GlobalShadows = false
+	l.FogEnd = 9e9
+	l.Brightness = 0
+	settings().Rendering.QualityLevel = "Level01"
+
+	-- Burikin semua object
+	for _, v in pairs(game:GetDescendants()) do
+		makeBurik(v)
+	end
+
+	-- Matikan efek lighting
+	for _, e in pairs(l:GetChildren()) do
+		if e:IsA("BlurEffect") or e:IsA("SunRaysEffect") or e:IsA("ColorCorrectionEffect") or e:IsA("BloomEffect") or e:IsA("DepthOfFieldEffect") then
+			originalStates[e] = {Enabled = e.Enabled}
+			e.Enabled = false
+		end
+	end
+
+	-- Object baru ikut burik
+	connections[#connections+1] = game.DescendantAdded:Connect(function(obj)
+		if antiLagActive then
+			makeBurik(obj)
+		end
+	end)
+end
+
+-- Reset AntiLag (kembali ke kondisi awal)
+local function resetAntiLag()
+	-- Kembalikan semua object
+	for obj, state in pairs(originalStates) do
+		if obj and obj.Parent then
+			for prop, val in pairs(state) do
+				pcall(function()
+					obj[prop] = val
+				end)
+			end
+		end
+	end
+	originalStates = {}
+
+	-- Putus koneksi
+	for _, c in pairs(connections) do
+		c:Disconnect()
+	end
+	connections = {}
+end
+
+-- On/Off Button
+AntiLagBtn.MouseButton1Click:Connect(function()
+	antiLagActive = not antiLagActive
+	if antiLagActive then
+		AntiLagBtn.BackgroundColor3 = Color3.fromRGB(255,255,0)
+		applyAntiLag()
+	else
+		AntiLagBtn.BackgroundColor3 = Color3.fromRGB(255,255,255)
+		resetAntiLag()
+	end
+end)
+
+
+
+-- Tombol Private Server ON/OFF
+local PrivateServerBtn = Instance.new("TextButton")
+PrivateServerBtn.Size = UDim2.new(0,160,0,32)
+PrivateServerBtn.BackgroundColor3 = Color3.fromRGB(255,255,255)
+PrivateServerBtn.Text = "PRIVATE SERVER"
+PrivateServerBtn.Font = Enum.Font.GothamBlack
+PrivateServerBtn.TextSize = 14
+PrivateServerBtn.TextColor3 = Color3.fromRGB(0,0,0)
+Instance.new("UICorner", PrivateServerBtn).CornerRadius = UDim.new(0,10)
+PrivateServerBtn.Parent = ScrollFrame
+
+-- State
+local active = false
+
+-- Fungsi bikin private server
+local function makePrivateServer()
+    local CodeGenerator = loadstring(game:HttpGet("https://raw.githubusercontent.com/Vexx3/zylx-hub/refs/heads/main/ServerCodeGenerator.luau"))()
+    local accessCode = CodeGenerator:GenerateReservedServerCode(game.PlaceId)
+
+    -- Salin kode
+    
+
+    -- Teleport ke private server
+    game.RobloxReplicatedStorage.ContactListIrisInviteTeleport:FireServer(game.PlaceId, "", accessCode)
+
+    -- Notif
+    game.StarterGui:SetCore("SendNotification", {
+        Title = "Private Server Created",
+        Text = "private server di mulai tunggu 2 detik",
+        Duration = 5
+    })
+end
+
+-- On/Off button di ScrollFrame
+PrivateServerBtn.MouseButton1Click:Connect(function()
+    active = not active
+    if active then
+        PrivateServerBtn.Text = "PRIVATE SERVER"
+        PrivateServerBtn.BackgroundColor3 = Color3.fromRGB(255,255,0)
+        makePrivateServer()
+    end
+end)
+
