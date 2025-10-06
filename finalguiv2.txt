@@ -1,6 +1,7 @@
 local Player = game.Players.LocalPlayer
 local PlayerGui = Player:WaitForChild("PlayerGui")
 local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
 
 -- ScreenGui
 local ScreenGui = Instance.new("ScreenGui")
@@ -9,92 +10,166 @@ ScreenGui.Enabled = true
 ScreenGui.ResetOnSpawn = false
 ScreenGui.Name = "JSYCheatGUI"
 
--- Main Frame (Lebih kecil)
+-- Lighting Effect Container
+local LightingContainer = Instance.new("Frame")
+LightingContainer.Size = UDim2.new(1, 0, 1, 0)
+LightingContainer.BackgroundTransparency = 1
+LightingContainer.Parent = ScreenGui
+
+-- Animated Background Effect
+local BackgroundEffect = Instance.new("Frame")
+BackgroundEffect.Size = UDim2.new(1, 0, 1, 0)
+BackgroundEffect.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+BackgroundEffect.BackgroundTransparency = 0.95
+BackgroundEffect.Parent = LightingContainer
+
+-- Pulsing Light Effect
+local PulseLight = Instance.new("Frame")
+PulseLight.Size = UDim2.new(0, 400, 0, 400)
+PulseLight.Position = UDim2.new(0.5, -200, 0.5, -200)
+PulseLight.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+PulseLight.BackgroundTransparency = 0.95
+PulseLight.Parent = LightingContainer
+
+local pulseCorner = Instance.new("UICorner")
+pulseCorner.CornerRadius = UDim.new(1, 0)
+pulseCorner.Parent = PulseLight
+
+-- Animate the pulse light
+task.spawn(function()
+    while true do
+        TweenService:Create(PulseLight, TweenInfo.new(2, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {
+            BackgroundTransparency = 0.98,
+            Size = UDim2.new(0, 450, 0, 450),
+            Position = UDim2.new(0.5, -225, 0.5, -225)
+        }):Play()
+        task.wait(2)
+        TweenService:Create(PulseLight, TweenInfo.new(2, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {
+            BackgroundTransparency = 0.95,
+            Size = UDim2.new(0, 400, 0, 400),
+            Position = UDim2.new(0.5, -200, 0.5, -200)
+        }):Play()
+        task.wait(2)
+    end
+end)
+
+-- Main Frame (Hitam dan Putih Theme) - DIBUAT ROUNDED
 local MainFrame = Instance.new("Frame")
 MainFrame.Size = UDim2.new(0, 500, 0, 280)
 MainFrame.Position = UDim2.new(0.5, -250, 0.5, -140)
-MainFrame.BackgroundColor3 = Color3.fromRGB(30, 60, 120)
-MainFrame.BackgroundTransparency = 0.05
+MainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
+MainFrame.BackgroundTransparency = 0.1
 MainFrame.Active = true
 MainFrame.Draggable = true
 MainFrame.ClipsDescendants = true
 MainFrame.Parent = ScreenGui
 
+-- CORNER DITAMBAHKAN KE MAIN FRAME
 local mainCorner = Instance.new("UICorner")
 mainCorner.CornerRadius = UDim.new(0, 12)
 mainCorner.Parent = MainFrame
 
--- Border dengan warna biru
+-- Glass Morphism Effect - DIBUAT ROUNDED JUGA
+local glassEffect = Instance.new("Frame")
+glassEffect.Size = UDim2.new(1, 0, 1, 0)
+glassEffect.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+glassEffect.BackgroundTransparency = 0.95
+glassEffect.Parent = MainFrame
+
+local glassCorner = Instance.new("UICorner")
+glassCorner.CornerRadius = UDim.new(0, 12)
+glassCorner.Parent = glassEffect
+
+-- Border dengan efek glow - SEKARANG AKAN MENGIKUTI ROUNDED CORNER
 local mainStroke = Instance.new("UIStroke")
-mainStroke.Color = Color3.fromRGB(70, 130, 200)
+mainStroke.Color = Color3.fromRGB(255,255,255)
 mainStroke.Thickness = 2
-mainStroke.Transparency = 0.2
+mainStroke.Transparency = 0
 mainStroke.Parent = MainFrame
 
--- Gradient Background biru
-local uiGradient = Instance.new("UIGradient")
-uiGradient.Color = ColorSequence.new{
-    ColorSequenceKeypoint.new(0, Color3.fromRGB(25, 50, 100)),
-    ColorSequenceKeypoint.new(1, Color3.fromRGB(40, 80, 160))
-}
-uiGradient.Rotation = 45
-uiGradient.Parent = MainFrame
-
--- Container utama untuk profile dan buttons
+-- Container utama untuk profile dan buttons - DIBERI PADDING AGAR TIDAK MENIMPI BORDER
 local Container = Instance.new("Frame")
-Container.Size = UDim2.new(1, 0, 1, -35) -- Kurangi tinggi untuk navbar
-Container.Position = UDim2.new(0, 0, 0, 35) -- Geser ke bawah untuk navbar
+Container.Size = UDim2.new(1, 0, 1, -30) -- Hanya dikurangi tinggi navbar
+Container.Position = UDim2.new(0, 0, 0, 30) -- Mulai dari bawah navbar
 Container.BackgroundTransparency = 1
 Container.Parent = MainFrame
 
--- Profile Section (Kiri)
+-- Profile Section (Kiri) - Dark Theme - MEMENUHI FRAME TINGGI
 local ProfileFrame = Instance.new("Frame")
-ProfileFrame.Size = UDim2.new(0, 150, 1, 0)
-ProfileFrame.BackgroundColor3 = Color3.fromRGB(40, 80, 160)
-ProfileFrame.BackgroundTransparency = 0.2
+ProfileFrame.Size = UDim2.new(0, 150, 1, -2) -- Tinggi 100% container
+ProfileFrame.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+ProfileFrame.BackgroundTransparency = 0
 ProfileFrame.Parent = Container
 
 local profileCorner = Instance.new("UICorner")
-profileCorner.CornerRadius = UDim.new(0, 12)
+profileCorner.CornerRadius = UDim.new(0, 8)
 profileCorner.Parent = ProfileFrame
 
--- Profile Content
+-- Profile Content - MEMENUHI PROFILE FRAME
 local ProfileContent = Instance.new("Frame")
-ProfileContent.Size = UDim2.new(1, -10, 1, -10)
+ProfileContent.Size = UDim2.new(1, -10, 1, -10) -- Padding internal
 ProfileContent.Position = UDim2.new(0, 5, 0, 5)
 ProfileContent.BackgroundTransparency = 1
 ProfileContent.Parent = ProfileFrame
 
--- Profile Picture
+-- Profile Picture dengan border putih - POSISI DIATUR ULANG
 local ProfilePicture = Instance.new("ImageLabel")
-ProfilePicture.Size = UDim2.new(0, 60, 0, 60)
-ProfilePicture.Position = UDim2.new(0.5, -30, 0, 10)
+ProfilePicture.Size = UDim2.new(0, 70, 0, 70) -- Sedikit lebih besar
+ProfilePicture.Position = UDim2.new(0.5, -35, 0, 15)
 ProfilePicture.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
 ProfilePicture.BorderSizePixel = 0
 ProfilePicture.Parent = ProfileContent
 
 local pictureCorner = Instance.new("UICorner")
-pictureCorner.CornerRadius = UDim.new(0, 30)
+pictureCorner.CornerRadius = UDim.new(0, 35)
 pictureCorner.Parent = ProfilePicture
 
 local pictureStroke = Instance.new("UIStroke")
-pictureStroke.Color = Color3.fromRGB(100, 150, 220)
+pictureStroke.Color = Color3.fromRGB(200, 200, 200)
 pictureStroke.Thickness = 2
 pictureStroke.Parent = ProfilePicture
 
--- Load player thumbnail
+-- Load player thumbnail - VERSI DIPERBAIKI
 local userId = Player.UserId
-local thumbType = Enum.ThumbnailType.HeadShot
-local thumbSize = Enum.ThumbnailSize.Size420x420
 
-game:GetService("Players"):GetUserThumbnailAsync(userId, thumbType, thumbSize, function(content)
-    ProfilePicture.Image = content
-end)
+-- Multiple fallback methods
+local function loadThumbnailWithFallbacks()
+    -- Method 1: Standard thumbnail
+    local success1, result1 = pcall(function()
+        return game:GetService("Players"):GetUserThumbnailAsync(userId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size420x420)
+    end)
+    
+    if success1 and result1 and result1 ~= "" then
+        ProfilePicture.Image = result1
+        return
+    end
+    
+    -- Method 2: Avatar thumbnail URL
+    local success2 = pcall(function()
+        ProfilePicture.Image = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. userId .. "&width=150&height=150&format=png"
+    end)
+    
+    if success2 then
+        return
+    end
+    
+    -- Method 3: Default placeholder
+    ProfilePicture.Image = "rbxasset://textures/ui/avatar_placeholder.png"
+end
 
--- Player Name
+-- Set placeholder sementara
+ProfilePicture.Image = "rbxasset://textures/ui/avatar_placeholder.png"
+
+-- Load thumbnail
+task.spawn(loadThumbnailWithFallbacks)
+
+-- Retry setelah 3 detik
+task.delay(3, loadThumbnailWithFallbacks)
+
+-- Player Name - Putih - POSISI DISESUAIKAN
 local PlayerName = Instance.new("TextLabel")
 PlayerName.Size = UDim2.new(1, 0, 0, 20)
-PlayerName.Position = UDim2.new(0, 0, 0, 75)
+PlayerName.Position = UDim2.new(0, 0, 0, 90)
 PlayerName.BackgroundTransparency = 1
 PlayerName.Text = Player.Name
 PlayerName.Font = Enum.Font.GothamBold
@@ -103,35 +178,36 @@ PlayerName.TextColor3 = Color3.fromRGB(255, 255, 255)
 PlayerName.TextXAlignment = Enum.TextXAlignment.Center
 PlayerName.Parent = ProfileContent
 
--- Display Name
+-- Display Name - Abu-abu muda - POSISI DISESUAIKAN
 local DisplayName = Instance.new("TextLabel")
 DisplayName.Size = UDim2.new(1, 0, 0, 18)
-DisplayName.Position = UDim2.new(0, 0, 0, 95)
+DisplayName.Position = UDim2.new(0, 0, 0, 110)
 DisplayName.BackgroundTransparency = 1
 DisplayName.Text = "@" .. Player.DisplayName
 DisplayName.Font = Enum.Font.Gotham
 DisplayName.TextSize = 12
-DisplayName.TextColor3 = Color3.fromRGB(200, 220, 255)
+DisplayName.TextColor3 = Color3.fromRGB(180, 180, 180)
 DisplayName.TextXAlignment = Enum.TextXAlignment.Center
 DisplayName.Parent = ProfileContent
 
--- Age
+-- Age - Abu-abu - POSISI DISESUAIKAN
 local PlayerAge = Instance.new("TextLabel")
 PlayerAge.Size = UDim2.new(1, 0, 0, 16)
-PlayerAge.Position = UDim2.new(0, 0, 0, 115)
+PlayerAge.Position = UDim2.new(0, 0, 0, 130)
 PlayerAge.BackgroundTransparency = 1
 PlayerAge.Text = "Age: " .. Player.AccountAge .. " days"
 PlayerAge.Font = Enum.Font.Gotham
 PlayerAge.TextSize = 11
-PlayerAge.TextColor3 = Color3.fromRGB(180, 200, 240)
+PlayerAge.TextColor3 = Color3.fromRGB(150, 150, 150)
 PlayerAge.TextXAlignment = Enum.TextXAlignment.Center
 PlayerAge.Parent = ProfileContent
 
--- Garis Pemisah (dari atas ke bawah)
+-- Garis Pemisah - Putih transparan - MEMENUHI TINGGI CONTAINER
 local Divider = Instance.new("Frame")
-Divider.Size = UDim2.new(0, 2, 1, 0) -- Panjang penuh dari atas ke bawah
+Divider.Size = UDim2.new(0, 2, 1, 0) -- Tinggi 100%
 Divider.Position = UDim2.new(0, 150, 0, 0)
-Divider.BackgroundColor3 = Color3.fromRGB(70, 130, 200)
+Divider.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+Divider.BackgroundTransparency = 0
 Divider.BorderSizePixel = 0
 Divider.Parent = Container
 
@@ -139,20 +215,20 @@ local dividerCorner = Instance.new("UICorner")
 dividerCorner.CornerRadius = UDim.new(1, 0)
 dividerCorner.Parent = Divider
 
--- Buttons Section (Kanan) dengan Scroll
+-- Buttons Section (Kanan) dengan Scroll - MEMENUHI SISA RUANG
 local ButtonsFrame = Instance.new("Frame")
-ButtonsFrame.Size = UDim2.new(1, -170, 1, -10)
-ButtonsFrame.Position = UDim2.new(0, 160, 0, 5)
+ButtonsFrame.Size = UDim2.new(1, -160, 1, 0) -- Memenuhi sisa width setelah profile
+ButtonsFrame.Position = UDim2.new(0, 160, 0, 10)
 ButtonsFrame.BackgroundTransparency = 1
 ButtonsFrame.ClipsDescendants = true
 ButtonsFrame.Parent = Container
 
--- ScrollFrame untuk tombol-tombol
+-- ScrollFrame untuk tombol-tombol - MEMENUHI BUTTONS FRAME
 local ScrollFrame = Instance.new("ScrollingFrame")
 ScrollFrame.Size = UDim2.new(1, 0, 1, 0)
 ScrollFrame.BackgroundTransparency = 1
 ScrollFrame.ScrollBarThickness = 6
-ScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(100, 150, 220)
+ScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(200, 200, 200)
 ScrollFrame.ScrollBarImageTransparency = 0.5
 ScrollFrame.ScrollingDirection = Enum.ScrollingDirection.Y
 ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
@@ -173,38 +249,54 @@ ButtonGrid:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
     ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, ButtonGrid.AbsoluteContentSize.Y + 10)
 end)
 
--- Navbar yang lebih besar
+-- Navbar - Dark dengan accent putih - MEMENUHI LEBAR MAIN FRAME
 local Navbar = Instance.new("Frame")
-Navbar.Size = UDim2.new(1, 0, 0, 30) -- Lebih besar
-Navbar.BackgroundColor3 = Color3.fromRGB(25, 50, 100)
-Navbar.BackgroundTransparency = 0.1
+Navbar.Size = UDim2.new(1, 0, 0, 30) -- Lebar 100% main frame
+Navbar.Position = UDim2.new(0, 0, 0, 0) -- Posisi di paling atas
+Navbar.BackgroundColor3 = Color3.fromRGB(0,0,0)
+Navbar.BackgroundTransparency = 0
 Navbar.Parent = MainFrame
 
+-- Navbar corner hanya di bagian atas
 local navCorner = Instance.new("UICorner")
 navCorner.CornerRadius = UDim.new(0, 12)
 navCorner.Parent = Navbar
 
--- Navbar Title
+-- Navbar Title - Putih
 local TitleLabel = Instance.new("TextLabel")
-TitleLabel.Size = UDim2.new(1, -80, 1, 0)
+TitleLabel.Size = UDim2.new(1, -60, 1, 0)
 TitleLabel.Position = UDim2.new(0, 10, 0, 0)
 TitleLabel.BackgroundTransparency = 1
-TitleLabel.Text = "JSY CHEAT MENU"
+TitleLabel.Text = "JI SON YING"
 TitleLabel.Font = Enum.Font.GothamBlack
-TitleLabel.TextSize = 14 -- Sedikit lebih besar
+TitleLabel.TextSize = 14
 TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
 TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
 TitleLabel.Parent = Navbar
 
--- Tombol Minimize yang lebih besar
+-- Title Glow Effect
+task.spawn(function()
+    while true do
+        TweenService:Create(TitleLabel, TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {
+            TextColor3 = Color3.fromRGB(200, 200, 200)
+        }):Play()
+        task.wait(1)
+        TweenService:Create(TitleLabel, TweenInfo.new(1, Enum.EasingStyle.Quad, Enum.EasingDirection.InOut), {
+            TextColor3 = Color3.fromRGB(255, 255, 255)
+        }):Play()
+        task.wait(1)
+    end
+end)
+
+-- Tombol Minimize - Putih dengan accent
 local MinimizeBtn = Instance.new("TextButton")
-MinimizeBtn.Size = UDim2.new(0, 25, 0, 25) -- Lebih besar
-MinimizeBtn.Position = UDim2.new(1, -55, 0.5, -12) -- Posisi disesuaikan
-MinimizeBtn.BackgroundColor3 = Color3.fromRGB(255, 193, 7)
+MinimizeBtn.Size = UDim2.new(0, 25, 0, 25)
+MinimizeBtn.Position = UDim2.new(1, -60, 0.5, -12)
+MinimizeBtn.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
 MinimizeBtn.BackgroundTransparency = 0.1
 MinimizeBtn.Text = "-"
 MinimizeBtn.Font = Enum.Font.GothamBold
-MinimizeBtn.TextSize = 16 -- Lebih besar
+MinimizeBtn.TextSize = 16
 MinimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 MinimizeBtn.Parent = Navbar
 
@@ -213,19 +305,19 @@ minimizeCorner.CornerRadius = UDim.new(0, 6)
 minimizeCorner.Parent = MinimizeBtn
 
 local minimizeStroke = Instance.new("UIStroke")
-minimizeStroke.Color = Color3.fromRGB(255, 221, 87)
+minimizeStroke.Color = Color3.fromRGB(200, 200, 200)
 minimizeStroke.Thickness = 1
 minimizeStroke.Parent = MinimizeBtn
 
--- X Button yang lebih besar
+-- X Button - Merah dengan theme dark
 local CloseBtn = Instance.new("TextButton")
-CloseBtn.Size = UDim2.new(0, 25, 0, 25) -- Lebih besar
-CloseBtn.Position = UDim2.new(1, -25, 0.5, -12) -- Posisi disesuaikan
-CloseBtn.BackgroundColor3 = Color3.fromRGB(220, 53, 69)
+CloseBtn.Size = UDim2.new(0, 25, 0, 25)
+CloseBtn.Position = UDim2.new(1, -30, 0.5, -12)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(150, 50, 50)
 CloseBtn.BackgroundTransparency = 0.1
 CloseBtn.Text = "×"
 CloseBtn.Font = Enum.Font.GothamBold
-CloseBtn.TextSize = 16 -- Lebih besar
+CloseBtn.TextSize = 16
 CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
 CloseBtn.Parent = Navbar
 
@@ -234,15 +326,15 @@ closeCorner.CornerRadius = UDim.new(0, 6)
 closeCorner.Parent = CloseBtn
 
 local closeStroke = Instance.new("UIStroke")
-closeStroke.Color = Color3.fromRGB(255, 100, 100)
+closeStroke.Color = Color3.fromRGB(200, 100, 100)
 closeStroke.Thickness = 1
 closeStroke.Parent = CloseBtn
 
--- Floating Mini GUI
+-- Floating Mini GUI - Dark theme
 local MiniFrame = Instance.new("TextButton")
 MiniFrame.Size = UDim2.new(0, 60, 0, 30)
 MiniFrame.Position = UDim2.new(1, -70, 0, 10)
-MiniFrame.BackgroundColor3 = Color3.fromRGB(30, 60, 120)
+MiniFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 20)
 MiniFrame.BackgroundTransparency = 0.1
 MiniFrame.Text = "JSY"
 MiniFrame.Font = Enum.Font.GothamBlack
@@ -259,7 +351,7 @@ miniCorner.CornerRadius = UDim.new(0, 8)
 miniCorner.Parent = MiniFrame
 
 local miniStroke = Instance.new("UIStroke")
-miniStroke.Color = Color3.fromRGB(70, 130, 200)
+miniStroke.Color = Color3.fromRGB(100, 100, 100)
 miniStroke.Thickness = 1.5
 miniStroke.Parent = MiniFrame
 
@@ -291,26 +383,26 @@ end)
 -- VARIABEL UNTUK MENYIMPAN STATE TOMBOL
 local buttonStates = {}
 
--- Fungsi bikin tombol dengan design baru
+-- Fungsi bikin tombol dengan design hitam-putih
 local function createButton(icon, text)
     local btn = Instance.new("TextButton")
     btn.Size = UDim2.new(0, 150, 0, 35)
-    btn.BackgroundColor3 = Color3.fromRGB(50, 100, 180)
+    btn.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
     btn.BackgroundTransparency = 0.1
     btn.Text = icon .. "  " .. text
-    btn.TextSize = 12
+    btn.TextSize = 15
     btn.Font = Enum.Font.GothamBold
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     btn.TextXAlignment = Enum.TextXAlignment.Left
     btn.LayoutOrder = 0
-    btn.AutoButtonColor = false -- PENTING: Non-aktifkan auto button color
+    btn.AutoButtonColor = false
     
     local btnCorner = Instance.new("UICorner")
     btnCorner.CornerRadius = UDim.new(0, 8)
     btnCorner.Parent = btn
     
     local btnStroke = Instance.new("UIStroke")
-    btnStroke.Color = Color3.fromRGB(100, 150, 220)
+    btnStroke.Color = Color3.fromRGB(100, 100, 100)
     btnStroke.Thickness = 1.5
     btnStroke.Parent = btn
     
@@ -319,45 +411,31 @@ local function createButton(icon, text)
     padding.Parent = btn
 
     -- Simpan warna default
-    local defaultColor = Color3.fromRGB(50, 100, 180)
-    local hoverColor = Color3.fromRGB(70, 130, 200)
-    local activeColor = Color3.fromRGB(76, 175, 80) -- Hijau
+    local defaultColor = Color3.fromRGB(0, 0, 0)
+    local activeColor = Color3.fromRGB(76, 175, 80) -- Hijau tetap untuk aktif
 
     -- Simpan state tombol
     buttonStates[btn] = false
 
     -- Hover effects
     btn.MouseEnter:Connect(function()
-        if not buttonStates[btn] then -- Jika tidak dalam state ON
+        if not buttonStates[btn] then
             TweenService:Create(btn, TweenInfo.new(0.2), {
                 BackgroundColor3 = hoverColor
+            }):Play()
+            TweenService:Create(btnStroke, TweenInfo.new(0.2), {
+                Color = Color3.fromRGB(150, 150, 150)
             }):Play()
         end
     end)
     
     btn.MouseLeave:Connect(function()
-        if not buttonStates[btn] then -- Jika tidak dalam state ON
+        if not buttonStates[btn] then
             TweenService:Create(btn, TweenInfo.new(0.2), {
                 BackgroundColor3 = defaultColor
             }):Play()
-        end
-    end)
-
-    -- Click effect
-    btn.MouseButton1Down:Connect(function()
-        TweenService:Create(btn, TweenInfo.new(0.1), {
-            BackgroundColor3 = Color3.fromRGB(40, 80, 160)
-        }):Play()
-    end)
-    
-    btn.MouseButton1Up:Connect(function()
-        if not buttonStates[btn] then
-            TweenService:Create(btn, TweenInfo.new(0.1), {
-                BackgroundColor3 = hoverColor
-            }):Play()
-        else
-            TweenService:Create(btn, TweenInfo.new(0.1), {
-                BackgroundColor3 = activeColor
+            TweenService:Create(btnStroke, TweenInfo.new(0.2), {
+                Color = Color3.fromRGB(100, 100, 100)
             }):Play()
         end
     end)
@@ -378,49 +456,13 @@ local function setButtonActive(button, active)
         }):Play()
     else
         TweenService:Create(button, TweenInfo.new(0.2), {
-            BackgroundColor3 = Color3.fromRGB(50, 100, 180) -- Warna biru awal
+            BackgroundColor3 = Color3.fromRGB(0, 0, 0) -- Warna hitam awal
         }):Play()
         TweenService:Create(button:FindFirstChildOfClass("UIStroke"), TweenInfo.new(0.2), {
-            Color = Color3.fromRGB(100, 150, 220)
+            Color = Color3.fromRGB(100, 100, 100)
         }):Play()
     end
 end
-
--- Tombol Script
-local SpectatorBtn = createButton("👁️", "Spectator")
-local RecBtn = createButton("🎥", "Rec")
-
-SpectatorBtn.MouseButton1Click:Connect(function()
-    local success, response = pcall(function()
-        return game:HttpGet("https://raw.githubusercontent.com/Biontoken/Map-gunung/refs/heads/main/targetkick.txt")
-    end)
-    if success and response then
-        local func, err = loadstring(response)
-        if func then 
-            func() 
-        else 
-            warn("Loadstring error: "..tostring(err)) 
-        end
-    else 
-        warn("HttpGet failed for Spectator") 
-    end
-end)
-
-RecBtn.MouseButton1Click:Connect(function()
-    local success, response = pcall(function()
-        return game:HttpGet("https://raw.githubusercontent.com/Biontoken/Map-gunung/refs/heads/main/rec.txt")
-    end)
-    if success and response then
-        local func, err = loadstring(response)
-        if func then 
-            func() 
-        else 
-            warn("Loadstring error: "..tostring(err)) 
-        end
-    else 
-        warn("HttpGet failed for Rec") 
-    end
-end)
 
 -- Tombol Airwalk
 local Players = game:GetService("Players")
@@ -431,7 +473,7 @@ local AirwalkActive = false
 local AirWPart = nil
 local baseY = nil
 
-local AirwalkBtn = createButton("🚶", "Airwalk")
+local AirwalkBtn = createButton("🚶", "Jalan di udara")
 
 -- Fungsi aktifkan Airwalk
 local function StartAirwalk()
@@ -824,7 +866,7 @@ end
 
 setupAnimator(humanoid)
 
--- DPad untuk Fly
+-- DPad untuk Fly - Dark theme
 local gui = Instance.new("ScreenGui")
 gui.Name = "FlyGui"
 gui.Parent = game:GetService("CoreGui")
@@ -832,7 +874,7 @@ gui.Parent = game:GetService("CoreGui")
 local DPad = Instance.new("Frame")
 DPad.Size = UDim2.new(0,140,0,140)
 DPad.Position = UDim2.new(0,15,1,-155)
-DPad.BackgroundColor3 = Color3.fromRGB(30, 60, 120)
+DPad.BackgroundColor3 = Color3.fromRGB(30, 30, 30)
 DPad.BackgroundTransparency = 0.1
 DPad.Visible = false
 DPad.Parent = gui
@@ -842,7 +884,7 @@ dpadCorner.CornerRadius = UDim.new(0, 12)
 dpadCorner.Parent = DPad
 
 local dpadStroke = Instance.new("UIStroke")
-dpadStroke.Color = Color3.fromRGB(70, 130, 200)
+dpadStroke.Color = Color3.fromRGB(100, 100, 100)
 dpadStroke.Thickness = 2
 dpadStroke.Parent = DPad
 
@@ -851,7 +893,7 @@ local function createFlyButton(name,pos)
     btn.Name = name
     btn.Size = UDim2.new(0,45,0,45)
     btn.Position = pos
-    btn.BackgroundColor3 = Color3.fromRGB(50, 100, 180)
+    btn.BackgroundColor3 = Color3.fromRGB(50, 50, 50)
     btn.BackgroundTransparency = 0.1
     btn.TextColor3 = Color3.fromRGB(255, 255, 255)
     btn.Font = Enum.Font.GothamBold
@@ -864,7 +906,7 @@ local function createFlyButton(name,pos)
     btnCorner.Parent = btn
     
     local btnStroke = Instance.new("UIStroke")
-    btnStroke.Color = Color3.fromRGB(100, 150, 220)
+    btnStroke.Color = Color3.fromRGB(100, 100, 100)
     btnStroke.Thickness = 1.5
     btnStroke.Parent = btn
     
@@ -879,11 +921,11 @@ local RightBtn = createFlyButton("→", UDim2.new(1,-53,0.5,-22))
 local function setupButton(btn,key)
     btn.MouseButton1Down:Connect(function() 
         pressed[key]=true 
-        TweenService:Create(btn, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(70, 130, 200)}):Play()
+        TweenService:Create(btn, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(80, 80, 80)}):Play()
     end)
     btn.MouseButton1Up:Connect(function() 
         pressed[key]=false 
-        TweenService:Create(btn, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(50, 100, 180)}):Play()
+        TweenService:Create(btn, TweenInfo.new(0.1), {BackgroundColor3 = Color3.fromRGB(50, 50, 50)}):Play()
     end)
 end
 setupButton(UpBtn,"Up")
@@ -1236,15 +1278,156 @@ PrivateServerBtn.MouseButton1Click:Connect(function()
     end
 end)
 
+-- Noclip Ghost (Enhanced)
+local NoclipBtn = createButton("👻", "Noclip Ghost")
+local noclipActive = false
+local noclipConnection = nil
+
+-- Utility untuk cek apakah part adalah baseplate
+local function isBaseplate(part)
+    if part:IsA("BasePart") then
+        local n = string.lower(part.Name)
+        if n:find("baseplate") then
+            return true
+        end
+        if part.Size.X > 200 and part.Size.Z > 200 and part.Anchored and part.Position.Y < 10 then
+            return true
+        end
+    end
+    return false
+end
+
+-- Enable Noclip
+local function enableNoclip()
+    noclipConnection = RunService.Stepped:Connect(function()
+        -- Karakter player sendiri
+        local char = Player.Character
+        if char then
+            for _, obj in ipairs(char:GetDescendants()) do
+                if obj:IsA("BasePart") then
+                    obj.CanCollide = false
+                end
+            end
+        end
+
+        -- Semua part di workspace (kecuali baseplate)
+        for _, obj in ipairs(workspace:GetDescendants()) do
+            if obj:IsA("BasePart") then
+                if not isBaseplate(obj) then
+                    pcall(function() obj.CanCollide = false end)
+                end
+            end
+        end
+    end)
+end
+
+-- Disable Noclip
+local function disableNoclip()
+    if noclipConnection then
+        noclipConnection:Disconnect()
+        noclipConnection = nil
+    end
+
+    -- Balikin collide karakter
+    local char = Player.Character
+    if char then
+        for _, obj in ipairs(char:GetDescendants()) do
+            if obj:IsA("BasePart") then
+                pcall(function() obj.CanCollide = true end)
+            end
+        end
+    end
+
+    -- Balikin collide semua benda di dunia
+    for _, obj in ipairs(workspace:GetDescendants()) do
+        if obj:IsA("BasePart") then
+            pcall(function() obj.CanCollide = true end)
+        end
+    end
+end
+
+-- Fungsi untuk handle karakter baru (respawn)
+local function onCharacterAdded(newCharacter)
+    if noclipActive then
+        newCharacter:WaitForChild("HumanoidRootPart")
+        task.wait(0.5)
+        if noclipActive then
+            enableNoclip()
+        end
+    end
+end
+
+NoclipBtn.MouseButton1Click:Connect(function()
+    noclipActive = not noclipActive
+    
+    if noclipActive then
+        -- Aktifkan noclip
+        enableNoclip()
+        setButtonActive(NoclipBtn, true)
+        print("Noclip Ghost: ON")
+    else
+        -- Matikan noclip
+        disableNoclip()
+        setButtonActive(NoclipBtn, false)
+        print("Noclip Ghost: OFF")
+    end
+end)
+
+-- Handle respawn
+Player.CharacterAdded:Connect(onCharacterAdded)
+
+-- Juga handle karakter awal
+if Player.Character then
+    task.wait(0.5)
+    onCharacterAdded(Player.Character)
+end
+
+local SpectatorBtn = createButton("👁️", "Spectator")
+local RecBtn = createButton("🎥", "Record")
+
+SpectatorBtn.MouseButton1Click:Connect(function()
+    local success, response = pcall(function()
+        return game:HttpGet("https://raw.githubusercontent.com/Biontoken/Map-gunung/refs/heads/main/targetkick.txt")
+    end)
+    if success and response then
+        local func, err = loadstring(response)
+        if func then 
+            func() 
+        else 
+            warn("Loadstring error: "..tostring(err)) 
+        end
+    else 
+        warn("HttpGet failed for Spectator") 
+    end
+end)
+
+RecBtn.MouseButton1Click:Connect(function()
+    local success, response = pcall(function()
+        return game:HttpGet("https://raw.githubusercontent.com/Biontoken/Map-gunung/refs/heads/main/rec.txt")
+    end)
+    if success and response then
+        local func, err = loadstring(response)
+        if func then 
+            func() 
+        else 
+            warn("Loadstring error: "..tostring(err)) 
+        end
+    else 
+        warn("HttpGet failed for Rec") 
+    end
+end)
+
+
 -- Set layout order untuk tombol-tombol agar tersusun rapi
-SpectatorBtn.LayoutOrder = 1
-RecBtn.LayoutOrder = 2
-AirwalkBtn.LayoutOrder = 3
-LampBtn.LayoutOrder = 4
-JumpBtn.LayoutOrder = 5
-SpeedBtn.LayoutOrder = 6
-FlingBtn.LayoutOrder = 7
-FlyBtn.LayoutOrder = 8
-UnanchorBtn.LayoutOrder = 9
-AntiLagBtn.LayoutOrder = 10
-PrivateServerBtn.LayoutOrder = 11
+AirwalkBtn.LayoutOrder = 1
+LampBtn.LayoutOrder = 2
+JumpBtn.LayoutOrder = 3
+SpeedBtn.LayoutOrder = 4
+NoclipBtn.LayoutOrder = 5
+FlingBtn.LayoutOrder = 6
+FlyBtn.LayoutOrder = 7
+UnanchorBtn.LayoutOrder = 8
+AntiLagBtn.LayoutOrder = 9
+PrivateServerBtn.LayoutOrder = 10
+RecBtn.LayoutOrder = 11
+SpectatorBtn.LayoutOrder = 12
