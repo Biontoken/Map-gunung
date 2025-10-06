@@ -1,4 +1,4 @@
-local Player = game.Players.LocalPlayer
+Frame Player = game.Players.LocalPlayer
 local PlayerGui = Player:WaitForChild("PlayerGui")
 local TweenService = game:GetService("TweenService")
 local RunService = game:GetService("RunService")
@@ -1364,12 +1364,12 @@ NoclipBtn.MouseButton1Click:Connect(function()
         -- Aktifkan noclip
         enableNoclip()
         setButtonActive(NoclipBtn, true)
-        print("Noclip Ghost: ON")
+        
     else
         -- Matikan noclip
         disableNoclip()
         setButtonActive(NoclipBtn, false)
-        print("Noclip Ghost: OFF")
+        
     end
 end)
 
@@ -1431,3 +1431,4 @@ AntiLagBtn.LayoutOrder = 9
 PrivateServerBtn.LayoutOrder = 10
 RecBtn.LayoutOrder = 11
 SpectatorBtn.LayoutOrder = 12
+
