@@ -110,7 +110,7 @@ local Title = Instance.new("TextLabel")
 Title.Size = UDim2.new(1, -70, 1, 0)
 Title.Position = UDim2.new(0, 8, 0, 0)
 Title.BackgroundTransparency = 1
-Title.Text = "TELEPORT SYSTEM"
+Title.Text = "JSY TELEPORT V2"
 Title.TextColor3 = Colors.Text
 Title.Font = Enum.Font.GothamBold
 Title.TextSize = 12
@@ -604,38 +604,49 @@ local function processCoordinates()
     parseCoords()
     
     flyThread = task.spawn(function()
-        local currentIndex = 1
+        local shouldRepeat = true
         
-        while running and currentIndex <= #coords do
-            local targetPos = coords[currentIndex]
+        while running and shouldRepeat do
+            local currentIndex = 1
+            local totalCoords = #coords
             
-            if teleportTo(targetPos) then
-                updateProgress(currentIndex, #coords)
+            while running and currentIndex <= totalCoords do
+                local targetPos = coords[currentIndex]
                 
-                local delayTime = tonumber(DelayBox.Text) or 1
-                if delayTime > 0 then
-                    local delayStart = tick()
-                    while running and tick() - delayStart < delayTime do
-                        task.wait(0.1)
+                if teleportTo(targetPos) then
+                    updateProgress(currentIndex, totalCoords)
+                    
+                    local delayTime = tonumber(DelayBox.Text) or 1
+                    if delayTime > 0 then
+                        local delayStart = tick()
+                        while running and tick() - delayStart < delayTime do
+                            task.wait(0.1)
+                        end
                     end
+                    
+                    currentIndex = currentIndex + 1
+                else
+                    task.wait(1)
                 end
-                
-                currentIndex = currentIndex + 1
+            end
+
+            -- Check if we should repeat
+            if running and currentIndex > totalCoords and totalCoords > 0 then
+                if respawnOn then
+                    task.wait(2)
+                    RespawnCharacter()
+                    task.wait(3)
+                end
+
+                -- Only repeat if repeat mode is still on
+                if repeatOn and running then
+                    updateProgress(0, totalCoords)
+                    -- Continue to next iteration of the outer loop
+                else
+                    shouldRepeat = false
+                end
             else
-                task.wait(1)
-            end
-        end
-
-        if running and currentIndex > #coords then
-            if respawnOn and #coords > 0 then
-                task.wait(2)
-                RespawnCharacter()
-                task.wait(3)
-            end
-
-            if repeatOn and running then
-                processCoordinates()
-                return
+                shouldRepeat = false
             end
         end
         
