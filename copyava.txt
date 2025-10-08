@@ -1,0 +1,648 @@
+--  CHANGE YOUR AVATAR - FINAL MODERN GUI HD
+-- GUI langsung muncul dengan scrollframe avatar horizontal + tombol minimize & close
+
+local Players = game:GetService("Players")
+local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+
+local lp = Players.LocalPlayer
+
+-- UI State
+local UIState = {isMinimized=false, isAnimating=false}
+
+-- Floating Button untuk minimize
+local floatingButton = nil
+
+-- Main UI HD
+local function createUI()
+    local ScreenGui = Instance.new("ScreenGui")
+    ScreenGui.Name = "AvatarLoaderGUI"
+    ScreenGui.Parent = lp.PlayerGui
+    ScreenGui.ResetOnSpawn = false
+    ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+    local MainFrame = Instance.new("Frame")
+    MainFrame.Size = UDim2.new(0,500,0,280)
+    MainFrame.Position = UDim2.new(0.5,-250,0.05,0)
+    MainFrame.BackgroundColor3 = Color3.fromRGB(20,20,20)
+    MainFrame.BorderSizePixel = 0
+    MainFrame.Visible = true
+    MainFrame.Parent = ScreenGui
+
+    -- Main Frame Gradient
+    local MainGradient = Instance.new("UIGradient")
+    MainGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(35,35,35)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(25,25,25))
+    })
+    MainGradient.Parent = MainFrame
+
+    local MainCorner = Instance.new("UICorner")
+    MainCorner.CornerRadius = UDim.new(0,16)
+    MainCorner.Parent = MainFrame
+
+    -- Main Frame Shadow
+    local MainShadow = Instance.new("ImageLabel")
+    MainShadow.Size = UDim2.new(1,20,1,20)
+    MainShadow.Position = UDim2.new(0,-10,0,-10)
+    MainShadow.BackgroundTransparency = 1
+    MainShadow.Image = "rbxassetid://1316045217"
+    MainShadow.ImageColor3 = Color3.fromRGB(0,0,0)
+    MainShadow.ImageTransparency = 0.9
+    MainShadow.ScaleType = Enum.ScaleType.Slice
+    MainShadow.SliceCenter = Rect.new(10,10,118,118)
+    MainShadow.Parent = MainFrame
+
+    -- Header dengan control buttons
+    local Header = Instance.new("Frame")
+    Header.Size = UDim2.new(1,0,0,40)
+    Header.Position = UDim2.new(0,0,0,0)
+    Header.BackgroundColor3 = Color3.fromRGB(30,30,30)
+    Header.BorderSizePixel = 0
+    Header.Parent = MainFrame
+
+    local HeaderCorner = Instance.new("UICorner")
+    HeaderCorner.CornerRadius = UDim.new(0,16)
+    HeaderCorner.Parent = Header
+
+    -- Header Gradient
+    local HeaderGradient = Instance.new("UIGradient")
+    HeaderGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(80,80,80)),
+        ColorSequenceKeypoint.new(0.5, Color3.fromRGB(60,60,60)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(40,40,40))
+    })
+    HeaderGradient.Parent = Header
+
+    -- Accent Line
+    local AccentLine = Instance.new("Frame")
+    AccentLine.Size = UDim2.new(1,0,0,3)
+    AccentLine.Position = UDim2.new(0,0,0,37)
+    AccentLine.BackgroundColor3 = Color3.fromRGB(0,150,255)
+    AccentLine.BorderSizePixel = 0
+    AccentLine.Parent = Header
+
+    local AccentGradient = Instance.new("UIGradient")
+    AccentGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(0,200,255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(0,100,255))
+    })
+    AccentGradient.Parent = AccentLine
+
+    -- Title
+    local Title = Instance.new("TextLabel")
+    Title.Size = UDim2.new(0.7,0,1,0)
+    Title.Position = UDim2.new(0,15,0,0)
+    Title.BackgroundTransparency = 1
+    Title.Text = " AVATAR LOADER"
+    Title.TextColor3 = Color3.fromRGB(255,255,255)
+    Title.TextSize = 18
+    Title.Font = Enum.Font.GothamBold
+    Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.Parent = Header
+
+    -- Close Button
+    local CloseButton = Instance.new("TextButton")
+    CloseButton.Size = UDim2.new(0,25,0,25)
+    CloseButton.Position = UDim2.new(1,-30,0,8)
+    CloseButton.BackgroundColor3 = Color3.fromRGB(255,80,80)
+    CloseButton.BorderSizePixel = 0
+    CloseButton.Text = "×"
+    CloseButton.TextColor3 = Color3.fromRGB(255,255,255)
+    CloseButton.TextSize = 20
+    CloseButton.Font = Enum.Font.GothamBold
+    CloseButton.Parent = Header
+
+    local CloseCorner = Instance.new("UICorner")
+    CloseCorner.CornerRadius = UDim.new(0,5)
+    CloseCorner.Parent = CloseButton
+
+    -- Close Button Hover Effect
+    CloseButton.MouseEnter:Connect(function()
+        local tween = TweenService:Create(CloseButton,TweenInfo.new(0.2),{
+            BackgroundColor3 = Color3.fromRGB(255,120,120)
+        })
+        tween:Play()
+    end)
+
+    CloseButton.MouseLeave:Connect(function()
+        local tween = TweenService:Create(CloseButton,TweenInfo.new(0.2),{
+            BackgroundColor3 = Color3.fromRGB(255,80,80)
+        })
+        tween:Play()
+    end)
+
+    -- Minimize Button
+    local MinimizeButton = Instance.new("TextButton")
+    MinimizeButton.Size = UDim2.new(0,25,0,25)
+    MinimizeButton.Position = UDim2.new(1,-65,0,8)
+    MinimizeButton.BackgroundColor3 = Color3.fromRGB(255,180,0)
+    MinimizeButton.BorderSizePixel = 0
+    MinimizeButton.Text = ""
+    MinimizeButton.TextColor3 = Color3.fromRGB(255,255,255)
+    MinimizeButton.TextSize = 20
+    MinimizeButton.Font = Enum.Font.GothamBold
+    MinimizeButton.Parent = Header
+
+    local MinimizeCorner = Instance.new("UICorner")
+    MinimizeCorner.CornerRadius = UDim.new(0,5)
+    MinimizeCorner.Parent = MinimizeButton
+
+    -- Minimize Button Hover Effect
+    MinimizeButton.MouseEnter:Connect(function()
+        local tween = TweenService:Create(MinimizeButton,TweenInfo.new(0.2),{
+            BackgroundColor3 = Color3.fromRGB(255,200,50)
+        })
+        tween:Play()
+    end)
+
+    MinimizeButton.MouseLeave:Connect(function()
+        local tween = TweenService:Create(MinimizeButton,TweenInfo.new(0.2),{
+            BackgroundColor3 = Color3.fromRGB(255,180,0)
+        })
+        tween:Play()
+    end)
+
+    -- Status Text
+    local StatusFrame = Instance.new("Frame")
+    StatusFrame.Size = UDim2.new(1,-20,0,35)
+    StatusFrame.Position = UDim2.new(0,10,1,-45)
+    StatusFrame.BackgroundColor3 = Color3.fromRGB(40,40,40)
+    StatusFrame.BorderSizePixel = 0
+    StatusFrame.Parent = MainFrame
+
+    local StatusCorner = Instance.new("UICorner")
+    StatusCorner.CornerRadius = UDim.new(0,8)
+    StatusCorner.Parent = StatusFrame
+
+    local StatusGradient = Instance.new("UIGradient")
+    StatusGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(50,50,50)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(40,40,40))
+    })
+    StatusGradient.Parent = StatusFrame
+
+    local StatusText = Instance.new("TextLabel")
+    StatusText.Size = UDim2.new(1,0,1,0)
+    StatusText.Position = UDim2.new(0,0,0,0)
+    StatusText.BackgroundTransparency = 1
+    StatusText.Text = " Pilih avatar dari player lain"
+    StatusText.TextColor3 = Color3.fromRGB(220,220,220)
+    StatusText.TextSize = 14
+    StatusText.Font = Enum.Font.GothamBold
+    StatusText.TextXAlignment = Enum.TextXAlignment.Center
+    StatusText.Parent = StatusFrame
+
+    -- ScrollFrame horizontal untuk avatar cards
+    local AvatarScrollFrame = Instance.new("ScrollingFrame")
+    AvatarScrollFrame.Size = UDim2.new(1,-20,1,-95)
+    AvatarScrollFrame.Position = UDim2.new(0,10,0,50)
+    AvatarScrollFrame.BackgroundColor3 = Color3.fromRGB(35,35,35)
+    AvatarScrollFrame.BorderSizePixel = 0
+    AvatarScrollFrame.CanvasSize = UDim2.new(0,0,0,0)
+    
+    --  SCROLLBAR DI-BLOK/DINONAKTIFKAN
+    AvatarScrollFrame.ScrollBarThickness = 0  -- Scrollbar disembunyikan
+    AvatarScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(80,80,80)
+    AvatarScrollFrame.VerticalScrollBarInset = Enum.ScrollBarInset.None
+    AvatarScrollFrame.HorizontalScrollBarInset = Enum.ScrollBarInset.None
+    AvatarScrollFrame.VerticalScrollBarPosition = Enum.VerticalScrollBarPosition.Left
+    AvatarScrollFrame.Parent = MainFrame
+
+    local ScrollCorner = Instance.new("UICorner")
+    ScrollCorner.CornerRadius = UDim.new(0,12)
+    ScrollCorner.Parent = AvatarScrollFrame
+
+    local UIListLayout = Instance.new("UIListLayout")
+    UIListLayout.FillDirection = Enum.FillDirection.Horizontal
+    UIListLayout.Padding = UDim.new(0,15)
+    UIListLayout.VerticalAlignment = Enum.VerticalAlignment.Center
+    UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Left
+    UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+    UIListLayout.Parent = AvatarScrollFrame
+
+    return ScreenGui, MainFrame, AvatarScrollFrame, StatusText, CloseButton, MinimizeButton, Header
+end
+
+-- Load avatar function SAMA PERSIS seperti script original Anda
+local function loadAvatar(username)
+    if not username or username == "" then return false,"Username kosong" end
+    
+    -- Cari UserId dari username
+    local success, userId = pcall(function() 
+        return Players:GetUserIdFromNameAsync(username) 
+    end)
+    if not success then return false,"Username tidak ditemukan" end
+    
+    -- Pastikan character ada
+    if not lp.Character then return false,"Character tidak ada" end
+
+    -- Dapatkan humanoid description
+    local success2, humanoidDesc = pcall(function() 
+        return Players:GetHumanoidDescriptionFromUserId(userId) 
+    end)
+    if not success2 then return false,"berhasil mendapatkan avatar description" end
+
+    -- Hapus item character lama (sama seperti script original)
+    pcall(function()
+        for _, item in pairs(lp.Character:GetChildren()) do
+            if item:IsA("Accessory") or item:IsA("Shirt") or item:IsA("Pants") or item:IsA("ShirtGraphic") then
+                item:Destroy()
+            end
+        end
+        wait(0.1)
+    end)
+
+    -- Apply avatar description (sama seperti script original)
+    local success3 = pcall(function()
+        lp.Character.Humanoid:ApplyDescriptionClientServer(humanoidDesc)
+        wait(0.5)
+        
+        -- Tambahkan pengecekan tambahan untuk memastikan perubahan
+        if lp.Character and lp.Character:FindFirstChild("Humanoid") then
+            -- Force update character
+            local humanoid = lp.Character.Humanoid
+            humanoid:ApplyDescription(humanoidDesc)
+        end
+    end)
+
+    if not success3 then return false,"Berhasil mengubah avatar" end
+    
+    return true,"Avatar berhasil diubah ke: "..username
+end
+
+-- Drag function
+local function makeDraggable(frame, dragHandle)
+    local dragging, dragStart, startPos
+    dragHandle.InputBegan:Connect(function(input)
+        if input.UserInputType == Enum.UserInputType.MouseButton1 then
+            dragging = true
+            dragStart = input.Position
+            startPos = frame.Position
+            input.Changed:Connect(function()
+                if input.UserInputState == Enum.UserInputState.End then
+                    dragging = false
+                end
+            end)
+        end
+    end)
+    UserInputService.InputChanged:Connect(function(input)
+        if dragging and input.UserInputType == Enum.UserInputType.MouseMovement then
+            local delta = input.Position - dragStart
+            frame.Position = UDim2.new(startPos.X.Scale,startPos.X.Offset+delta.X,startPos.Y.Scale,startPos.Y.Offset+delta.Y)
+        end
+    end)
+end
+
+-- Create floating button
+local function createFloatingButton(screenGui)
+    local FloatingButton = Instance.new("TextButton")
+    FloatingButton.Size = UDim2.new(0,60,0,60)
+    FloatingButton.Position = UDim2.new(1,-80,0.5,-30)
+    FloatingButton.BackgroundColor3 = Color3.fromRGB(0,150,255)
+    FloatingButton.BorderSizePixel = 0
+    FloatingButton.Text = ""
+    FloatingButton.TextColor3 = Color3.fromRGB(255,255,255)
+    FloatingButton.TextSize = 20
+    FloatingButton.Font = Enum.Font.GothamBold
+    FloatingButton.Visible = false
+    FloatingButton.ZIndex = 10
+    FloatingButton.Parent = screenGui
+
+    -- Floating Button Gradient
+    local FloatingGradient = Instance.new("UIGradient")
+    FloatingGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(0,180,255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(0,120,255))
+    })
+    FloatingGradient.Parent = FloatingButton
+
+    local FloatingCorner = Instance.new("UICorner")
+    FloatingCorner.CornerRadius = UDim.new(0,15)
+    FloatingCorner.Parent = FloatingButton
+
+    -- Floating Button Shadow
+    local FloatingShadow = Instance.new("ImageLabel")
+    FloatingShadow.Size = UDim2.new(1,10,1,10)
+    FloatingShadow.Position = UDim2.new(0,-5,0,-5)
+    FloatingShadow.BackgroundTransparency = 1
+    FloatingShadow.Image = "rbxassetid://1316045217"
+    FloatingShadow.ImageColor3 = Color3.fromRGB(0,0,0)
+    FloatingShadow.ImageTransparency = 0.8
+    FloatingShadow.ScaleType = Enum.ScaleType.Slice
+    FloatingShadow.SliceCenter = Rect.new(10,10,118,118)
+    FloatingShadow.Parent = FloatingButton
+
+    -- Hover Effect
+    FloatingButton.MouseEnter:Connect(function()
+        local tween = TweenService:Create(FloatingButton,TweenInfo.new(0.2),{
+            BackgroundColor3 = Color3.fromRGB(0,200,255),
+            Size = UDim2.new(0,65,0,65)
+        })
+        tween:Play()
+    end)
+
+    FloatingButton.MouseLeave:Connect(function()
+        local tween = TweenService:Create(FloatingButton,TweenInfo.new(0.2),{
+            BackgroundColor3 = Color3.fromRGB(0,150,255),
+            Size = UDim2.new(0,60,0,60)
+        })
+        tween:Play()
+    end)
+
+    return FloatingButton
+end
+
+-- UI Animation untuk minimize/maximize dengan efek smooth
+local function toggleMinimize(mainFrame, scrollFrame, statusFrame, isMinimized, floatingBtn)
+    if UIState.isAnimating then return end
+    UIState.isAnimating = true
+
+    if isMinimized then 
+        -- ANIMASI MINIMIZE: Scale down dan fade out
+        local scaleTween = TweenService:Create(mainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+            Size = UDim2.new(0, 10, 0, 10),  -- Scale down ke ukuran sangat kecil
+            Position = UDim2.new(1, -80, 0.5, -30)  -- Pindah ke posisi floating button
+        })
+        
+        local fadeTween = TweenService:Create(mainFrame, TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+            BackgroundTransparency = 1
+        })
+
+        -- Sembunyikan konten terlebih dahulu
+        scrollFrame.Visible = false
+        statusFrame.Visible = false
+        
+        scaleTween:Play()
+        fadeTween:Play()
+        
+        scaleTween.Completed:Connect(function()
+            mainFrame.Visible = false
+            mainFrame.BackgroundTransparency = 0  -- Reset transparency
+            mainFrame.Size = UDim2.new(0,500,0,280)  -- Reset size
+            mainFrame.Position = UDim2.new(0.5,-250,0.05,0)  -- Reset position
+            
+            -- Tampilkan floating button dengan animasi
+            floatingBtn.Visible = true
+            floatingBtn.Size = UDim2.new(0,10,0,10)  -- Start dari kecil
+            floatingBtn.Position = UDim2.new(1,-80,0.5,-30)
+            
+            local floatingScale = TweenService:Create(floatingBtn, TweenInfo.new(0.4, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out), {
+                Size = UDim2.new(0,60,0,60)
+            })
+            floatingScale:Play()
+            
+            UIState.isAnimating = false
+        end)
+    else 
+        -- ANIMASI MAXIMIZE: Scale up dan fade in
+        -- Sembunyikan floating button dengan animasi
+        local floatingScaleOut = TweenService:Create(floatingBtn, TweenInfo.new(0.2, Enum.EasingStyle.Back, Enum.EasingDirection.In), {
+            Size = UDim2.new(0,10,0,10)
+        })
+        
+        floatingScaleOut:Play()
+        floatingScaleOut.Completed:Connect(function()
+            floatingBtn.Visible = false
+            
+            -- Tampilkan main frame di posisi floating button (kecil)
+            mainFrame.Visible = true
+            mainFrame.Size = UDim2.new(0,10,0,10)
+            mainFrame.Position = UDim2.new(1,-80,0.5,-30)
+            mainFrame.BackgroundTransparency = 0.5
+            
+            -- Animasi scale up ke ukuran normal
+            local scaleTween = TweenService:Create(mainFrame, TweenInfo.new(0.5, Enum.EasingStyle.Elastic, Enum.EasingDirection.Out), {
+                Size = UDim2.new(0,500,0,280),
+                Position = UDim2.new(0.5,-250,0.05,0)
+            })
+            
+            local fadeTween = TweenService:Create(mainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+                BackgroundTransparency = 0
+            })
+            
+            scaleTween:Play()
+            fadeTween:Play()
+            
+            scaleTween.Completed:Connect(function()
+                -- Tampilkan konten setelah animasi selesai
+                scrollFrame.Visible = true
+                statusFrame.Visible = true
+                UIState.isAnimating = false
+            end)
+        end)
+    end
+end
+
+-- Create avatar cards
+local function createAvatarCards(scrollFrame, statusText)
+    local function updateCanvas()
+        local layout = scrollFrame:FindFirstChildOfClass("UIListLayout")
+        if layout then
+            scrollFrame.CanvasSize = UDim2.new(0, layout.AbsoluteContentSize.X, 0, 0)
+        end
+    end
+
+    local function addAvatarCard(plr)
+        local Card = Instance.new("Frame")
+        Card.Size = UDim2.new(0,120,0,160)
+        Card.BackgroundColor3 = Color3.fromRGB(40,40,40)
+        Card.BorderSizePixel = 0
+        Card.Parent = scrollFrame
+
+        -- Card Gradient
+        local CardGradient = Instance.new("UIGradient")
+        CardGradient.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(50,50,50)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(35,35,35))
+        })
+        CardGradient.Parent = Card
+
+        local corner = Instance.new("UICorner")
+        corner.CornerRadius = UDim.new(0,10)
+        corner.Parent = Card
+
+        -- Card Shadow
+        local CardShadow = Instance.new("ImageLabel")
+        CardShadow.Size = UDim2.new(1,8,1,8)
+        CardShadow.Position = UDim2.new(0,-4,0,-4)
+        CardShadow.BackgroundTransparency = 1
+        CardShadow.Image = "rbxassetid://1316045217"
+        CardShadow.ImageColor3 = Color3.fromRGB(0,0,0)
+        CardShadow.ImageTransparency = 0.8
+        CardShadow.ScaleType = Enum.ScaleType.Slice
+        CardShadow.SliceCenter = Rect.new(10,10,118,118)
+        CardShadow.Parent = Card
+
+        -- Avatar Image Frame
+        local ImageFrame = Instance.new("Frame")
+        ImageFrame.Size = UDim2.new(1,-16,0,85)
+        ImageFrame.Position = UDim2.new(0,8,0,8)
+        ImageFrame.BackgroundColor3 = Color3.fromRGB(25,25,25)
+        ImageFrame.BorderSizePixel = 0
+        ImageFrame.Parent = Card
+
+        local ImageCorner = Instance.new("UICorner")
+        ImageCorner.CornerRadius = UDim.new(0,6)
+        ImageCorner.Parent = ImageFrame
+
+        -- Avatar Image
+        local thumb = Players:GetUserThumbnailAsync(plr.UserId, Enum.ThumbnailType.HeadShot, Enum.ThumbnailSize.Size150x150)
+        local AvatarImage = Instance.new("ImageLabel")
+        AvatarImage.Size = UDim2.new(1,-4,1,-4)
+        AvatarImage.Position = UDim2.new(0,2,0,2)
+        AvatarImage.BackgroundTransparency = 1
+        AvatarImage.Image = thumb
+        AvatarImage.Parent = ImageFrame
+
+        local ImgCorner = Instance.new("UICorner")
+        ImgCorner.CornerRadius = UDim.new(0,4)
+        ImgCorner.Parent = AvatarImage
+
+        -- Player Name
+        local NameLabel = Instance.new("TextLabel")
+        NameLabel.Size = UDim2.new(1,-16,0,25)
+        NameLabel.Position = UDim2.new(0,8,0,100)
+        NameLabel.BackgroundTransparency = 1
+        NameLabel.Text = plr.Name
+        NameLabel.TextColor3 = Color3.fromRGB(255,255,255)
+        NameLabel.TextSize = 12
+        NameLabel.Font = Enum.Font.GothamBold
+        NameLabel.TextWrapped = true
+        NameLabel.Parent = Card
+
+        -- Load Button
+        local LoadButton = Instance.new("TextButton")
+        LoadButton.Size = UDim2.new(1,-16,0,32)
+        LoadButton.Position = UDim2.new(0,8,0,125)
+        LoadButton.BackgroundColor3 = Color3.fromRGB(0,150,255)
+        LoadButton.TextColor3 = Color3.fromRGB(255,255,255)
+        LoadButton.Text = "LOAD"
+        LoadButton.TextSize = 14
+        LoadButton.Font = Enum.Font.GothamBold
+        LoadButton.AutoButtonColor = false
+        LoadButton.Parent = Card
+
+        -- Button Gradient
+        local ButtonGradient = Instance.new("UIGradient")
+        ButtonGradient.Color = ColorSequence.new({
+            ColorSequenceKeypoint.new(0, Color3.fromRGB(0,180,255)),
+            ColorSequenceKeypoint.new(1, Color3.fromRGB(0,120,255))
+        })
+        ButtonGradient.Parent = LoadButton
+
+        local btnCorner = Instance.new("UICorner")
+        btnCorner.CornerRadius = UDim.new(0,6)
+        btnCorner.Parent = LoadButton
+
+        -- Button Hover Effect
+        LoadButton.MouseEnter:Connect(function()
+            local tween = TweenService:Create(LoadButton,TweenInfo.new(0.2),{
+                BackgroundColor3 = Color3.fromRGB(0,200,255)
+            })
+            tween:Play()
+        end)
+
+        LoadButton.MouseLeave:Connect(function()
+            local tween = TweenService:Create(LoadButton,TweenInfo.new(0.2),{
+                BackgroundColor3 = Color3.fromRGB(0,150,255)
+            })
+            tween:Play()
+        end)
+
+        -- Load Avatar Function
+        LoadButton.MouseButton1Click:Connect(function()
+            statusText.Text = " Sabar loading.."
+            statusText.TextColor3 = Color3.fromRGB(255,255,100)
+            
+            LoadButton.Text = "LOADING..."
+            LoadButton.BackgroundColor3 = Color3.fromRGB(255,200,0)
+            
+            local success,msg = loadAvatar(plr.Name)
+            if success then
+                statusText.Text = " " .. msg
+                statusText.TextColor3 = Color3.fromRGB(100,255,100)
+                LoadButton.Text = "BERHASIL!"
+                LoadButton.BackgroundColor3 = Color3.fromRGB(0,255,100)
+                
+                wait(2)
+                LoadButton.Text = "LOAD"
+                LoadButton.BackgroundColor3 = Color3.fromRGB(0,150,255)
+            else
+                statusText.Text = " " .. msg
+                statusText.TextColor3 = Color3.fromRGB(255,255,255)
+                LoadButton.Text = "BERHASIL!"
+                LoadButton.BackgroundColor3 = Color3.fromRGB(255,100,100)
+                
+                wait(2)
+                LoadButton.Text = "LOAD"
+                LoadButton.BackgroundColor3 = Color3.fromRGB(0,150,255)
+            end
+        end)
+    end
+
+    -- Add existing players
+    for _, plr in pairs(Players:GetPlayers()) do
+        if plr ~= lp then 
+            addAvatarCard(plr) 
+        end
+    end
+    updateCanvas()
+
+    -- Auto update when player joins/leaves
+    Players.PlayerAdded:Connect(function(plr)
+        if plr ~= lp then
+            addAvatarCard(plr)
+            updateCanvas()
+        end
+    end)
+
+    Players.PlayerRemoving:Connect(function(plr)
+        updateCanvas()
+    end)
+end
+
+-- Main Execution
+local ScreenGui, MainFrame, AvatarScrollFrame, StatusText, CloseButton, MinimizeButton, Header = createUI()
+
+-- Create floating button
+floatingButton = createFloatingButton(ScreenGui)
+
+-- Make header draggable
+makeDraggable(MainFrame, Header)
+
+-- Close Button Function
+CloseButton.MouseButton1Click:Connect(function()
+    -- Animasi close
+    local fadeTween = TweenService:Create(MainFrame, TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out), {
+        BackgroundTransparency = 1
+    })
+    fadeTween:Play()
+    fadeTween.Completed:Connect(function()
+        ScreenGui:Destroy()
+    end)
+end)
+
+-- Minimize Button Function
+MinimizeButton.MouseButton1Click:Connect(function()
+    UIState.isMinimized = not UIState.isMinimized
+    toggleMinimize(MainFrame, AvatarScrollFrame, StatusText.Parent, UIState.isMinimized, floatingButton)
+    
+    -- Update minimize button text
+    MinimizeButton.Text = UIState.isMinimized and "+" or ""
+end)
+
+-- Floating Button Function (untuk membuka kembali GUI)
+floatingButton.MouseButton1Click:Connect(function()
+    if UIState.isMinimized then
+        UIState.isMinimized = false
+        toggleMinimize(MainFrame, AvatarScrollFrame, StatusText.Parent, UIState.isMinimized, floatingButton)
+        MinimizeButton.Text = ""
+    end
+end)
+
+-- Create avatar cards
+createAvatarCards(AvatarScrollFrame, StatusText)
+
+print(" Avatar Loader GUI Loaded!")
