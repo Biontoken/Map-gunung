@@ -1,0 +1,379 @@
+-- JSY MAIN MENU GUI - BRIGHT VERSION
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "JsyMainMenu"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
+
+-- TWEEN SERVICE
+local TweenService = game:GetService("TweenService")
+
+-- FUNGSI UNTUK MEMBUAT CORNER
+local function makeCorner(parent, radius)
+    local corner = Instance.new("UICorner")
+    corner.CornerRadius = UDim.new(0, radius)
+    corner.Parent = parent
+    return corner
+end
+
+-- FUNGSI UNTUK MEMBUAT GRADIENT
+local function makeGradient(parent, color1, color2, rotation)
+    local gradient = Instance.new("UIGradient")
+    gradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, color1),
+        ColorSequenceKeypoint.new(1, color2)
+    })
+    gradient.Rotation = rotation or 0
+    gradient.Parent = parent
+    return gradient
+end
+
+-- FUNGSI ANIMASI
+local function animate(obj, properties, duration, easingStyle, easingDirection)
+    local tweenInfo = TweenInfo.new(
+        duration or 0.2,
+        easingStyle or Enum.EasingStyle.Quint,
+        easingDirection or Enum.EasingDirection.Out,
+        0,
+        false,
+        0
+    )
+    local tween = TweenService:Create(obj, tweenInfo, properties)
+    tween:Play()
+    return tween
+end
+
+-- MAIN FRAME
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 320, 0, 295)
+MainFrame.Position = UDim2.new(0.5, -160, 0.5, -147.5)
+MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
+MainFrame.BorderSizePixel = 0
+MainFrame.ClipsDescendants = true
+MainFrame.Parent = ScreenGui
+
+makeCorner(MainFrame, 15)
+makeGradient(MainFrame, 
+    Color3.fromRGB(45, 45, 65), 
+    Color3.fromRGB(30, 30, 50), 
+    45
+)
+
+-- HEADER - NAVBAR LEBIH TERANG DENGAN TOMBOL X
+local Header = Instance.new("Frame")
+Header.Size = UDim2.new(1, 0, 0, 60)
+Header.BackgroundColor3 = Color3.fromRGB(60, 100, 150)
+Header.BorderSizePixel = 0
+Header.Parent = MainFrame
+
+makeCorner(Header, 15)
+makeGradient(Header, 
+    Color3.fromRGB(80, 130, 190), 
+    Color3.fromRGB(60, 100, 150), 
+    90
+)
+
+-- TITLE
+local Title = Instance.new("TextLabel")
+Title.Text = "⚡ JSY EXECUTOR MENU"
+Title.Size = UDim2.new(1, -80, 1, 0)
+Title.Position = UDim2.new(0, 20, 0, 0)
+Title.BackgroundTransparency = 1
+Title.TextColor3 = Color3.fromRGB(255, 255, 255)
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 20
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = Header
+
+-- MINIMIZE BUTTON
+local MinimizeBtn = Instance.new("TextButton")
+MinimizeBtn.Text = "─"
+MinimizeBtn.Size = UDim2.new(0, 35, 0, 35)
+MinimizeBtn.Position = UDim2.new(1, -80, 0.5, -17.5)
+MinimizeBtn.BackgroundColor3 = Color3.fromRGB(80, 130, 190)
+MinimizeBtn.BorderSizePixel = 0
+MinimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+MinimizeBtn.Font = Enum.Font.GothamBold
+MinimizeBtn.TextSize = 18
+MinimizeBtn.AutoButtonColor = false
+MinimizeBtn.Parent = Header
+
+makeCorner(MinimizeBtn, 8)
+makeGradient(MinimizeBtn, 
+    Color3.fromRGB(100, 150, 210), 
+    Color3.fromRGB(80, 130, 190), 
+    90
+)
+
+-- CLOSE/DESTROY BUTTON (TOMBOL X)
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Text = "✕"
+CloseBtn.Size = UDim2.new(0, 35, 0, 35)
+CloseBtn.Position = UDim2.new(1, -40, 0.5, -17.5)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(200, 80, 80)
+CloseBtn.BorderSizePixel = 0
+CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.TextSize = 16
+CloseBtn.AutoButtonColor = false
+CloseBtn.Parent = Header
+
+makeCorner(CloseBtn, 8)
+makeGradient(CloseBtn, 
+    Color3.fromRGB(220, 100, 100), 
+    Color3.fromRGB(180, 70, 70), 
+    90
+)
+
+-- BUTTONS CONTAINER
+local ButtonsFrame = Instance.new("Frame")
+ButtonsFrame.Size = UDim2.new(1, -30, 1, -75)
+ButtonsFrame.Position = UDim2.new(0, 15, 0, 70)
+ButtonsFrame.BackgroundTransparency = 1
+ButtonsFrame.Parent = MainFrame
+
+-- FUNGSI MEMBUAT TOMBOL EXECUTOR YANG LEBIH TERANG
+local function createExecutorButton(text, description, positionY, icon)
+    local button = Instance.new("TextButton")
+    button.Text = ""
+    button.Size = UDim2.new(1, 0, 0, 65)
+    button.Position = UDim2.new(0, 0, 0, positionY)
+    button.BackgroundColor3 = Color3.fromRGB(50, 80, 120)
+    button.BorderSizePixel = 0
+    button.AutoButtonColor = false
+    button.Parent = ButtonsFrame
+    
+    makeCorner(button, 12)
+    makeGradient(button, 
+        Color3.fromRGB(70, 110, 160), 
+        Color3.fromRGB(50, 80, 120), 
+        90
+    )
+    
+    -- ICON
+    local IconLabel = Instance.new("TextLabel")
+    IconLabel.Text = icon
+    IconLabel.Size = UDim2.new(0, 40, 0, 40)
+    IconLabel.Position = UDim2.new(0, 15, 0.5, -20)
+    IconLabel.BackgroundTransparency = 1
+    IconLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+    IconLabel.Font = Enum.Font.GothamBold
+    IconLabel.TextSize = 20
+    IconLabel.Parent = button
+    
+    -- BUTTON TEXT
+    local ButtonText = Instance.new("TextLabel")
+    ButtonText.Text = text
+    ButtonText.Size = UDim2.new(1, -70, 0, 25)
+    ButtonText.Position = UDim2.new(0, 65, 0, 12)
+    ButtonText.BackgroundTransparency = 1
+    ButtonText.TextColor3 = Color3.fromRGB(255, 255, 255)
+    ButtonText.Font = Enum.Font.GothamBold
+    ButtonText.TextSize = 16
+    ButtonText.TextXAlignment = Enum.TextXAlignment.Left
+    ButtonText.Parent = button
+    
+    -- DESCRIPTION
+    local DescText = Instance.new("TextLabel")
+    DescText.Text = description
+    DescText.Size = UDim2.new(1, -70, 0, 18)
+    DescText.Position = UDim2.new(0, 65, 0, 35)
+    DescText.BackgroundTransparency = 1
+    DescText.TextColor3 = Color3.fromRGB(230, 230, 250)
+    DescText.Font = Enum.Font.Gotham
+    DescText.TextSize = 12
+    DescText.TextXAlignment = Enum.TextXAlignment.Left
+    DescText.Parent = button
+    
+    -- HOVER EFFECT YANG LEBIH SMOOTH
+    local originalSize = button.Size
+    local buttonGradient = button.UIGradient
+    
+    button.MouseEnter:Connect(function()
+        animate(button, {
+            Size = originalSize + UDim2.new(0, 6, 0, 6),
+            BackgroundColor3 = Color3.fromRGB(80, 130, 190)
+        }, 0.15)
+        
+        animate(buttonGradient, {
+            Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(100, 150, 210)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(80, 130, 190))
+            })
+        }, 0.15)
+    end)
+    
+    button.MouseLeave:Connect(function()
+        animate(button, {
+            Size = originalSize,
+            BackgroundColor3 = Color3.fromRGB(50, 80, 120)
+        }, 0.15)
+        
+        animate(buttonGradient, {
+            Color = ColorSequence.new({
+                ColorSequenceKeypoint.new(0, Color3.fromRGB(70, 110, 160)),
+                ColorSequenceKeypoint.new(1, Color3.fromRGB(50, 80, 120))
+            })
+        }, 0.15)
+    end)
+    
+    -- CLICK EFFECT YANG LEBIH CEPAT
+    button.MouseButton1Down:Connect(function()
+        animate(button, {
+            Size = originalSize - UDim2.new(0, 3, 0, 3),
+            BackgroundColor3 = Color3.fromRGB(40, 70, 110)
+        }, 0.08)
+    end)
+    
+    button.MouseButton1Up:Connect(function()
+        animate(button, {
+            Size = originalSize,
+            BackgroundColor3 = Color3.fromRGB(80, 130, 190)
+        }, 0.08)
+    end)
+    
+    return button
+end
+
+-- BUAT TOMBOL EXECUTOR (HANYA 3 TOMBOL)
+local CheatButton = createExecutorButton("CHEAT SCRIPT", "Execute main cheat script", 0, "🎮")
+local AVATARButton = createExecutorButton("AVATAR SCRIPT", "Execute AVATAR script", 75, "🏴‍☠️")
+local TeleportButton = createExecutorButton("TELEPORT SCRIPT", "Execute teleport script", 150, "📍")
+
+-- RESTORE BUTTON (FLOATING - POJOK KANAN ATAS)
+local RestoreButton = Instance.new("TextButton")
+RestoreButton.Text = "📂 MENU"
+RestoreButton.Size = UDim2.new(0, 80, 0, 35)
+RestoreButton.AnchorPoint = Vector2.new(1, 0)
+RestoreButton.Position = UDim2.new(1, -10, 0, 10)
+RestoreButton.BackgroundColor3 = Color3.fromRGB(50, 80, 120)
+RestoreButton.BorderSizePixel = 1
+RestoreButton.BorderColor3 = Color3.fromRGB(100, 100, 100)
+RestoreButton.TextColor3 = Color3.fromRGB(255, 255, 255)
+RestoreButton.Font = Enum.Font.GothamBold
+RestoreButton.TextSize = 14
+RestoreButton.AutoButtonColor = false
+RestoreButton.Visible = false
+RestoreButton.ZIndex = 10
+RestoreButton.Parent = ScreenGui
+
+makeCorner(RestoreButton, 8)
+
+-- MINIMIZE FUNCTIONALITY
+local isMinimized = false
+
+local function minimizeGUI()
+    if isMinimized then return end
+    isMinimized = true
+    
+    animate(MainFrame, {
+        Size = UDim2.new(0, 0, 0, 0),
+        Position = UDim2.new(0.5, 0, 0.5, 0)
+    }, 0.25, Enum.EasingStyle.Back, Enum.EasingDirection.In)
+    
+    wait(0.25)
+    MainFrame.Visible = false
+    RestoreButton.Visible = true
+end
+
+local function restoreGUI()
+    if not isMinimized then return end
+    isMinimized = false
+    
+    RestoreButton.Visible = false
+    MainFrame.Visible = true
+    
+    MainFrame.Size = UDim2.new(0, 0, 0, 0)
+    MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+    animate(MainFrame, {
+        Size = UDim2.new(0, 320, 0, 295),
+        Position = UDim2.new(0.5, -160, 0.5, -147.5)
+    }, 0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+end
+
+-- FUNGSI UNTUK MENUTUP/MENGHANCURKAN GUI
+local function destroyGUI()
+    animate(MainFrame, {
+        Size = UDim2.new(0, 0, 0, 0),
+        Position = UDim2.new(0.5, 0, 0.5, 0),
+        BackgroundTransparency = 1
+    }, 0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    
+    wait(0.25)
+    ScreenGui:Destroy()
+end
+
+-- CONNECT BUTTONS
+MinimizeBtn.MouseButton1Click:Connect(minimizeGUI)
+CloseBtn.MouseButton1Click:Connect(destroyGUI)
+RestoreButton.MouseButton1Click:Connect(restoreGUI)
+
+-- EXECUTOR FUNCTIONS
+CheatButton.MouseButton1Click:Connect(function()
+    animate(CheatButton, {BackgroundColor3 = Color3.fromRGB(120, 255, 120)}, 0.15)
+    wait(0.4)
+    
+    -- Execute cheat script
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/Biontoken/Map-gunung/refs/heads/main/guiv2.txt"))()
+    
+    minimizeGUI()
+end)
+
+AVATARButton.MouseButton1Click:Connect(function()
+    animate(AVATARButton, {BackgroundColor3 = Color3.fromRGB(120, 255, 120)}, 0.15)
+    wait(0.4)
+    
+    -- Execute ava script
+    loadstring(game:HttpGet("https://pastefy.app/HqePK9W2/raw"))()
+    
+    minimizeGUI()
+end)
+
+TeleportButton.MouseButton1Click:Connect(function()
+    animate(TeleportButton, {BackgroundColor3 = Color3.fromRGB(120, 255, 120)}, 0.15)
+    wait(0.4)
+    
+    -- Execute teleport script
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/Biontoken/Map-gunung/refs/heads/main/teleport.txt"))()
+    
+    minimizeGUI()
+end)
+
+-- HOVER EFFECTS
+MinimizeBtn.MouseEnter:Connect(function()
+    animate(MinimizeBtn, {BackgroundColor3 = Color3.fromRGB(100, 150, 210)}, 0.15)
+end)
+
+MinimizeBtn.MouseLeave:Connect(function()
+    animate(MinimizeBtn, {BackgroundColor3 = Color3.fromRGB(80, 130, 190)}, 0.15)
+end)
+
+CloseBtn.MouseEnter:Connect(function()
+    animate(CloseBtn, {BackgroundColor3 = Color3.fromRGB(220, 100, 100)}, 0.15)
+end)
+
+CloseBtn.MouseLeave:Connect(function()
+    animate(CloseBtn, {BackgroundColor3 = Color3.fromRGB(200, 80, 80)}, 0.15)
+end)
+
+RestoreButton.MouseEnter:Connect(function()
+    animate(RestoreButton, {
+        BackgroundColor3 = Color3.fromRGB(70, 110, 160),
+        Size = UDim2.new(0, 85, 0, 40)
+    }, 0.15)
+end)
+
+RestoreButton.MouseLeave:Connect(function()
+    animate(RestoreButton, {
+        BackgroundColor3 = Color3.fromRGB(50, 80, 120),
+        Size = UDim2.new(0, 80, 0, 35)
+    }, 0.15)
+end)
+
+-- ANIMASI AWAL UNTUK MAIN FRAME
+MainFrame.Size = UDim2.new(0, 0, 0, 0)
+MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+animate(MainFrame, {
+    Size = UDim2.new(0, 320, 0, 295),
+    Position = UDim2.new(0.5, -160, 0.5, -147.5)
+}, 0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
