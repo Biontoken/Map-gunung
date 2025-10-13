@@ -7,6 +7,7 @@ ScreenGui.Parent = game.Players.LocalPlayer:WaitForChild("PlayerGui")
 
 -- TWEEN SERVICE
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 
 -- FUNGSI UNTUK MEMBUAT CORNER
 local function makeCorner(parent, radius)
@@ -45,8 +46,8 @@ end
 
 -- MAIN FRAME
 local MainFrame = Instance.new("Frame")
-MainFrame.Size = UDim2.new(0, 320, 0, 295)
-MainFrame.Position = UDim2.new(0.5, -160, 0.5, -147.5)
+MainFrame.Size = UDim2.new(0, 320, 0, 370) -- Diperbesar untuk menampung tombol tambahan
+MainFrame.Position = UDim2.new(0.5, -160, 0.5, -185) -- Disesuaikan posisinya
 MainFrame.BackgroundColor3 = Color3.fromRGB(30, 30, 45)
 MainFrame.BorderSizePixel = 0
 MainFrame.ClipsDescendants = true
@@ -235,10 +236,11 @@ local function createExecutorButton(text, description, positionY, icon)
     return button
 end
 
--- BUAT TOMBOL EXECUTOR (HANYA 3 TOMBOL)
+-- BUAT TOMBOL EXECUTOR (SEKARANG 4 TOMBOL)
 local CheatButton = createExecutorButton("CHEAT SCRIPT", "Execute main cheat script", 0, "🎮")
 local AVATARButton = createExecutorButton("AVATAR SCRIPT", "Execute AVATAR script", 75, "🏴‍☠️")
-local TeleportButton = createExecutorButton("TELEPORT SCRIPT", "Execute teleport script", 150, "📍")
+local FISHITButton = createExecutorButton("FISH IT SCRIPT", "Execute FISH IT script", 150, "🎣")
+local TeleportButton = createExecutorButton("TELEPORT SCRIPT", "Execute teleport script", 225, "📍")
 
 -- RESTORE BUTTON (FLOATING - POJOK KANAN ATAS)
 local RestoreButton = Instance.new("TextButton")
@@ -258,6 +260,43 @@ RestoreButton.ZIndex = 10
 RestoreButton.Parent = ScreenGui
 
 makeCorner(RestoreButton, 8)
+
+-- FUNGSI DRAG UNTUK MENU
+local dragging
+local dragInput
+local dragStart
+local startPos
+
+local function update(input)
+    local delta = input.Position - dragStart
+    MainFrame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
+end
+
+Header.InputBegan:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
+        dragging = true
+        dragStart = input.Position
+        startPos = MainFrame.Position
+        
+        input.Changed:Connect(function()
+            if input.UserInputState == Enum.UserInputState.End then
+                dragging = false
+            end
+        end)
+    end
+end)
+
+Header.InputChanged:Connect(function(input)
+    if input.UserInputType == Enum.UserInputType.MouseMovement or input.UserInputType == Enum.UserInputType.Touch then
+        dragInput = input
+    end
+end)
+
+UserInputService.InputChanged:Connect(function(input)
+    if input == dragInput and dragging then
+        update(input)
+    end
+end)
 
 -- MINIMIZE FUNCTIONALITY
 local isMinimized = false
@@ -286,8 +325,8 @@ local function restoreGUI()
     MainFrame.Size = UDim2.new(0, 0, 0, 0)
     MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
     animate(MainFrame, {
-        Size = UDim2.new(0, 320, 0, 295),
-        Position = UDim2.new(0.5, -160, 0.5, -147.5)
+        Size = UDim2.new(0, 320, 0, 370), -- Diperbesar sesuai dengan ukuran frame baru
+        Position = UDim2.new(0.5, -160, 0.5, -185) -- Disesuaikan posisinya
     }, 0.35, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
 end
 
@@ -325,6 +364,16 @@ AVATARButton.MouseButton1Click:Connect(function()
     
     -- Execute ava script
     loadstring(game:HttpGet("https://pastefy.app/HqePK9W2/raw"))()
+    
+    minimizeGUI()
+end)
+
+FISHITButton.MouseButton1Click:Connect(function()
+    animate(FISHITButton, {BackgroundColor3 = Color3.fromRGB(120, 255, 120)}, 0.15)
+    wait(0.4)
+    
+    -- Execute FISH IT script (gunakan URL yang sesuai untuk script fishing)
+    loadstring(game:HttpGet("https://raw.githubusercontent.com/Biontoken/Map-gunung/refs/heads/main/mancing.txt"))() -- Ganti URL dengan script fishing yang sesuai
     
     minimizeGUI()
 end)
@@ -374,6 +423,6 @@ end)
 MainFrame.Size = UDim2.new(0, 0, 0, 0)
 MainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
 animate(MainFrame, {
-    Size = UDim2.new(0, 320, 0, 295),
-    Position = UDim2.new(0.5, -160, 0.5, -147.5)
+    Size = UDim2.new(0, 320, 0, 370), -- Diperbesar sesuai dengan ukuran frame baru
+    Position = UDim2.new(0.5, -160, 0.5, -185) -- Disesuaikan posisinya
 }, 0.45, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
