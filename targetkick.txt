@@ -7,6 +7,7 @@ local Active = true
 local RenderConnection
 local FlingActive = false
 local FlingThread
+local OriginalCFrame -- simpan posisi karakter sebelum Fling
 
 -- === GUI Screen ===
 local ScreenGui = Instance.new("ScreenGui", game.CoreGui)
@@ -25,13 +26,8 @@ local function styleButton(btn, text, bgColor)
     local corner = Instance.new("UICorner", btn)
     corner.CornerRadius = UDim.new(0, 15)
 
-    -- highlight on hover tanpa reset warna aktif
     btn.MouseEnter:Connect(function()
         btn.BackgroundColor3 = btn.BackgroundColor3:lerp(Color3.fromRGB(255,255,255),0.2)
-    end)
-    btn.MouseLeave:Connect(function()
-        -- tidak reset ke bgColor lama
-        -- biarkan warna tombol tetap sesuai status
     end)
 end
 
@@ -172,7 +168,6 @@ NextBtn.MouseButton1Click:Connect(function()
 end)
 
 ResetBtn.MouseButton1Click:Connect(function()
-    -- reset navigasi tapi jangan set camera ke kita
     TargetList = getTargetablePlayers()
     if #TargetList > 0 then
         spectate(1)
@@ -200,46 +195,54 @@ local function combinedFling()
         local lpHRP = lp.Character and lp.Character:FindFirstChild("HumanoidRootPart")
         local targetHRP = CurrentTarget and CurrentTarget.Character and CurrentTarget.Character:FindFirstChild("HumanoidRootPart")
         if lpHRP and targetHRP then
-            -- Normal fling ke target
             local direction = (targetHRP.Position - lpHRP.Position).Unit
-            local speed = 200
+            local speed = 2000
             lpHRP.AssemblyLinearVelocity = direction * speed
             lpHRP.CFrame = targetHRP.CFrame
-
-            -- Hidden fling / tendang super kuat
-            local vel = lpHRP.Velocity
-            lpHRP.Velocity = vel * 999 + Vector3.new(0,999,0)
-            RunService.RenderStepped:Wait()
-            lpHRP.Velocity = vel
         end
     end
 end
 
--- Tombol FLING (warna berubah sesuai status)
+-- Tombol FLING (FINAL + kembalikan posisi awal tanpa kepental)
 FlingBtn.MouseButton1Click:Connect(function()
     if not Active then return end
     FlingActive = not FlingActive
 
-    -- update warna tombol sesuai status
-    if FlingActive then
-        FlingBtn.BackgroundColor3 = Color3.fromRGB(0,255,0) -- hijau saat aktif
-    else
-        FlingBtn.BackgroundColor3 = Color3.fromRGB(255,170,0) -- oranye saat nonaktif
-        if LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
-            LP.Character.HumanoidRootPart.AssemblyLinearVelocity = Vector3.new(0,0,0)
-        end
-    end
+    local lpHRP = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
 
-    -- jalankan coroutine fling hanya saat aktif
     if FlingActive then
+        FlingBtn.BackgroundColor3 = Color3.fromRGB(0,255,0)
+        if lpHRP then
+            OriginalCFrame = lpHRP.CFrame
+        end
+
         if not FlingThread or coroutine.status(FlingThread) == "dead" then
             FlingThread = coroutine.create(combinedFling)
             coroutine.resume(FlingThread)
         end
+    else
+        FlingBtn.BackgroundColor3 = Color3.fromRGB(255,170,0)
+        if lpHRP then
+            -- Freeze karakter
+            lpHRP.AssemblyLinearVelocity = Vector3.new(0,0,0)
+            lpHRP.RotVelocity = Vector3.new(0,0,0)
+            lpHRP.Anchored = true
+
+            -- Tunggu 1 detik
+            wait(0.3)
+
+            -- Kembalikan posisi awal
+            if OriginalCFrame then
+                lpHRP.CFrame = OriginalCFrame
+            end
+
+            -- Lepas freeze
+            lpHRP.Anchored = false
+        end
     end
 end)
 
--- set warna awal tombol sesuai status
+
 if FlingActive then
     FlingBtn.BackgroundColor3 = Color3.fromRGB(0,255,0)
 else
@@ -252,16 +255,13 @@ CloseBtn.MouseButton1Click:Connect(function()
     CurrentTarget = nil
     TargetList = {}
     FlingActive = false
-
-    -- Reset camera ke kita
     if LP.Character and LP.Character:FindFirstChild("Humanoid") then
         Cam.CameraSubject = LP.Character:FindFirstChild("Humanoid")
     end
-
     ScreenGui:Destroy()
 end)
 
--- Auto update camera: **tetap follow target walau kita mati**
+-- Auto update camera
 RenderConnection = RunService.RenderStepped:Connect(function()
     if not Active then return end
     if CurrentTarget and CurrentTarget.Character then
