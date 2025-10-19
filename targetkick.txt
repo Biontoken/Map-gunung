@@ -109,7 +109,7 @@ local function createButton(parent, text, bgColor, positionY)
 end
 
 -- Create buttons
-local XBtn = createButton(RightFrame, "✕ CLOSE", COLORS.RED, 0.08)
+local XBtn = createButton(RightFrame, "CLOSE", COLORS.RED, 0.08)
 local TeleBtn = createButton(RightFrame, "TELEPORT", COLORS.BLUE, 0.38)
 local KickBtn = createButton(RightFrame, "KICK", COLORS.BLUE, 0.58)
 local FollowBtn = createButton(RightFrame, "FOLLOW", COLORS.BLUE, 0.78)
@@ -381,8 +381,7 @@ local function startFollowToTarget(target)
         if not target.Character then stopFollow() return end
         local targetHRP = target.Character:FindFirstChild("HumanoidRootPart")
         if not targetHRP then stopFollow() return end
-        rootPart.CFrame = targetHRP.CFrame * CFrame.new(0, 0, 3)
-    end)
+        rootPart.CFrame = targetHRP.CFrame * CFrame.new(0, 0, 1CLOSE end)
 end
 
 FollowBtn.MouseButton1Click:Connect(function()
@@ -426,3 +425,4 @@ if #TargetList > 0 then
     CurrentTarget = TargetList[1]
     updateProfile(CurrentTarget)
 end
+
