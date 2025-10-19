@@ -1,0 +1,428 @@
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+local LP = Players.LocalPlayer
+local Cam = workspace.CurrentCamera
+
+-- State
+local Active = true
+local TargetList = {}
+local CurrentIndex = 0
+local CurrentTarget = nil
+
+local FlingActive = false
+local FlingThread = nil
+local OriginalCFrame = nil
+
+local FollowActive = false
+local FollowConnection = nil
+local FollowAnim = nil
+
+-- GUI Constants
+local COLORS = {
+    BLUE = Color3.fromRGB(0, 170, 255),
+    GREEN = Color3.fromRGB(0, 200, 80),
+    RED = Color3.fromRGB(255, 70, 70),
+    WHITE = Color3.fromRGB(255, 255, 255),
+    BLACK = Color3.fromRGB(0, 0, 0),
+    LIGHT_GRAY = Color3.fromRGB(200, 200, 200)
+}
+
+-- References to local character parts
+local humanoid, rootPart
+
+local function refreshCharacterRefs()
+    local char = LP.Character
+    if char then
+        humanoid = char:FindFirstChildOfClass("Humanoid")
+        rootPart = char:FindFirstChild("HumanoidRootPart")
+    else
+        humanoid = nil
+        rootPart = nil
+    end
+end
+
+refreshCharacterRefs()
+
+LP.CharacterAdded:Connect(function(char)
+    char:WaitForChild("Humanoid", 5)
+    char:WaitForChild("HumanoidRootPart", 5)
+    refreshCharacterRefs()
+    
+    if FollowActive then
+        if FollowConnection then
+            FollowConnection:Disconnect()
+            FollowConnection = nil
+        end
+        if FollowAnim then
+            FollowAnim:Stop()
+            FollowAnim = nil
+        end
+        FollowActive = false
+        FollowBtn.BackgroundColor3 = COLORS.BLUE
+        FollowBtn.Text = "FOLLOW"
+    end
+end)
+
+-- ---------- GUI CREATION ----------
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "JSY_Spectate_Final"
+ScreenGui.Parent = game.CoreGui
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+-- Right-side vertical frame
+local RightFrame = Instance.new("Frame")
+RightFrame.Size = UDim2.new(0, 100, 0, 200)
+RightFrame.Position = UDim2.new(1, -110, 0.25, 0)
+RightFrame.BackgroundColor3 = COLORS.BLACK
+RightFrame.BackgroundTransparency = 0.3
+RightFrame.BorderSizePixel = 0
+RightFrame.Active = true
+RightFrame.Parent = ScreenGui
+
+local rightFrameCorner = Instance.new("UICorner", RightFrame)
+rightFrameCorner.CornerRadius = UDim.new(0, 10)
+local rightFrameStroke = Instance.new("UIStroke", RightFrame)
+rightFrameStroke.Color = COLORS.WHITE
+rightFrameStroke.Thickness = 1.5
+
+local function createButton(parent, text, bgColor, positionY)
+    local button = Instance.new("TextButton")
+    button.Size = UDim2.new(0.80, 0, 0, 35)
+    button.Position = UDim2.new(0.5, 0, positionY, 0)
+    button.AnchorPoint = Vector2.new(0.5, 0)
+    button.BackgroundColor3 = bgColor
+    button.BorderSizePixel = 0
+    button.TextColor3 = COLORS.WHITE
+    button.Font = Enum.Font.GothamBold
+    button.TextSize = 13
+    button.Text = text
+    button.AutoButtonColor = false
+    button.Parent = parent
+    
+    local corner = Instance.new("UICorner", button)
+    corner.CornerRadius = UDim.new(0, 6)
+    
+    return button
+end
+
+-- Create buttons
+local XBtn = createButton(RightFrame, "✕ CLOSE", COLORS.RED, 0.08)
+local TeleBtn = createButton(RightFrame, "TELEPORT", COLORS.BLUE, 0.38)
+local KickBtn = createButton(RightFrame, "KICK", COLORS.BLUE, 0.58)
+local FollowBtn = createButton(RightFrame, "FOLLOW", COLORS.BLUE, 0.78)
+
+-- Bottom navigation frame
+local BottomFrame = Instance.new("Frame")
+BottomFrame.Size = UDim2.new(0, 280, 0, 45)
+BottomFrame.Position = UDim2.new(0.5, -130, 0.80, 0)
+BottomFrame.BackgroundColor3 = COLORS.BLACK
+BottomFrame.BackgroundTransparency = 0.3
+BottomFrame.BorderSizePixel = 0
+BottomFrame.Parent = ScreenGui
+
+local bottomFrameCorner = Instance.new("UICorner", BottomFrame)
+bottomFrameCorner.CornerRadius = UDim.new(0, 10)
+local bottomFrameStroke = Instance.new("UIStroke", BottomFrame)
+bottomFrameStroke.Color = COLORS.WHITE
+bottomFrameStroke.Thickness = 1.5
+
+local function createNavButton(parent, text, positionX)
+    local button = Instance.new("TextButton")
+    button.Size = UDim2.new(0, 70, 0, 30)
+    button.Position = UDim2.new(positionX, 0, 0.5, 0)
+    button.AnchorPoint = Vector2.new(0, 0.5)
+    button.BackgroundColor3 = COLORS.BLUE
+    button.BorderSizePixel = 0
+    button.TextColor3 = COLORS.WHITE
+    button.Font = Enum.Font.GothamBold
+    button.TextSize = 13
+    button.Text = text
+    button.Parent = parent
+    
+    local corner = Instance.new("UICorner", button)
+    corner.CornerRadius = UDim.new(0, 6)
+    
+    return button
+end
+
+local PrevBtn = createNavButton(BottomFrame, "◀ PREV", 0.04)
+local ResetBtn = createNavButton(BottomFrame, "RESET", 0.38)
+local NextBtn = createNavButton(BottomFrame, "NEXT ▶", 0.72)
+
+-- Profile frame
+local ProfileFrame = Instance.new("Frame")
+ProfileFrame.Size = UDim2.new(0, 180, 0, 70)
+ProfileFrame.Position = UDim2.new(1, -190, 0, 5)
+ProfileFrame.BackgroundColor3 = COLORS.BLACK
+ProfileFrame.BackgroundTransparency = 0.3
+ProfileFrame.BorderSizePixel = 0
+ProfileFrame.Parent = ScreenGui
+
+local profileFrameCorner = Instance.new("UICorner", ProfileFrame)
+profileFrameCorner.CornerRadius = UDim.new(0, 10)
+local profileFrameStroke = Instance.new("UIStroke", ProfileFrame)
+profileFrameStroke.Color = COLORS.WHITE
+profileFrameStroke.Thickness = 1.5
+
+-- Avatar
+local Avatar = Instance.new("ImageLabel")
+Avatar.Size = UDim2.new(0, 40, 0, 40)
+Avatar.Position = UDim2.new(0, 8, 0.5, -20)
+Avatar.BackgroundColor3 = COLORS.WHITE
+Avatar.BorderSizePixel = 0
+Avatar.Parent = ProfileFrame
+local avatarCorner = Instance.new("UICorner", Avatar)
+avatarCorner.CornerRadius = UDim.new(0, 8)
+
+-- User info
+local UserInfoFrame = Instance.new("Frame")
+UserInfoFrame.Size = UDim2.new(1, -55, 1, -16)
+UserInfoFrame.Position = UDim2.new(0, 50, 0, 8)
+UserInfoFrame.BackgroundTransparency = 1
+UserInfoFrame.Parent = ProfileFrame
+
+local UsernameLabel = Instance.new("TextLabel")
+UsernameLabel.Size = UDim2.new(1, 0, 0.6, 0)
+UsernameLabel.Position = UDim2.new(0, 0, 0, 0)
+UsernameLabel.BackgroundTransparency = 1
+UsernameLabel.Font = Enum.Font.GothamBold
+UsernameLabel.TextColor3 = COLORS.WHITE
+UsernameLabel.TextXAlignment = Enum.TextXAlignment.Left
+UsernameLabel.TextSize = 13
+UsernameLabel.TextTruncate = Enum.TextTruncate.AtEnd
+UsernameLabel.Text = "Select a player..."
+UsernameLabel.Parent = UserInfoFrame
+
+local AgeLabel = Instance.new("TextLabel")
+AgeLabel.Size = UDim2.new(1, 0, 0.4, 0)
+AgeLabel.Position = UDim2.new(0, 0, 0.6, 0)
+AgeLabel.BackgroundTransparency = 1
+AgeLabel.Font = Enum.Font.Gotham
+AgeLabel.TextColor3 = COLORS.LIGHT_GRAY
+AgeLabel.TextXAlignment = Enum.TextXAlignment.Left
+AgeLabel.TextSize = 11
+AgeLabel.Text = "Age: -- days"
+AgeLabel.Parent = UserInfoFrame
+
+local function updateProfile(plr)
+    if plr and plr:IsA("Player") then
+        UsernameLabel.Text = plr.Name
+        AgeLabel.Text = "Age: " .. tostring(plr.AccountAge or 0) .. " days"
+        Avatar.Image = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. plr.UserId .. "&width=150&height=150&format=png"
+    else
+        UsernameLabel.Text = "No target"
+        AgeLabel.Text = "Use nav buttons"
+        Avatar.Image = ""
+    end
+end
+
+-- ---------- TARGETING ----------
+local function getTargetablePlayers()
+    local list = {}
+    for _, p in pairs(Players:GetPlayers()) do
+        if p ~= LP and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
+            table.insert(list, p)
+        end
+    end
+    return list
+end
+
+local function refreshTargetList()
+    TargetList = getTargetablePlayers()
+end
+
+local function spectate(index)
+    if not Active then return end
+    refreshTargetList()
+    if #TargetList == 0 then
+        CurrentTarget = nil
+        CurrentIndex = 0
+        updateProfile(nil)
+        return
+    end
+    if index < 1 then index = #TargetList end
+    if index > #TargetList then index = 1 end
+    CurrentIndex = index
+    CurrentTarget = TargetList[CurrentIndex]
+    updateProfile(CurrentTarget)
+end
+
+PrevBtn.MouseButton1Click:Connect(function()
+    if #TargetList == 0 then refreshTargetList() end
+    if #TargetList == 0 then return end
+    local nextIndex = CurrentIndex - 1
+    if nextIndex < 1 then nextIndex = #TargetList end
+    spectate(nextIndex)
+end)
+
+NextBtn.MouseButton1Click:Connect(function()
+    if #TargetList == 0 then refreshTargetList() end
+    if #TargetList == 0 then return end
+    local nextIndex = CurrentIndex + 1
+    if nextIndex > #TargetList then nextIndex = 1 end
+    spectate(nextIndex)
+end)
+
+ResetBtn.MouseButton1Click:Connect(function()
+    refreshTargetList()
+    if #TargetList > 0 then 
+        spectate(1) 
+    else
+        CurrentTarget = nil
+        CurrentIndex = 0
+        updateProfile(nil)
+    end
+end)
+
+-- ---------- CAMERA ----------
+RunService.RenderStepped:Connect(function()
+    if not Active then return end
+    if CurrentTarget and CurrentTarget.Character then
+        local hrp = CurrentTarget.Character:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            Cam.CameraSubject = hrp
+        end
+    end
+end)
+
+-- ---------- TELEPORT ----------
+TeleBtn.MouseButton1Click:Connect(function()
+    if not CurrentTarget then return end
+    local lpHRP = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+    local targetHRP = CurrentTarget.Character and CurrentTarget.Character:FindFirstChild("HumanoidRootPart")
+    if lpHRP and targetHRP then
+        lpHRP.CFrame = targetHRP.CFrame + Vector3.new(0, 3, 0)
+    end
+end)
+
+-- ---------- KICK (with Save Position) ----------
+local function flingLoop()
+    while FlingActive do
+        RunService.Heartbeat:Wait()
+        local lpHRP = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+        local targetHRP = CurrentTarget and CurrentTarget.Character and CurrentTarget.Character:FindFirstChild("HumanoidRootPart")
+        if lpHRP and targetHRP then
+            local dir = (targetHRP.Position - lpHRP.Position)
+            if dir.Magnitude > 0 then
+                lpHRP.AssemblyLinearVelocity = dir.Unit * 500
+            end
+            lpHRP.CFrame = targetHRP.CFrame
+        end
+    end
+end
+
+KickBtn.MouseButton1Click:Connect(function()
+    if not CurrentTarget then return end
+    
+    FlingActive = not FlingActive
+    
+    local lpHRP = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
+    if not lpHRP then return end
+    
+    if FlingActive then
+        -- Simpan posisi sebelum kick
+        OriginalCFrame = lpHRP.CFrame
+        
+        KickBtn.BackgroundColor3 = COLORS.GREEN
+        KickBtn.Text = "KICKING"
+        
+        if not FlingThread then
+            FlingThread = task.spawn(flingLoop)
+        end
+    else
+        -- Nonaktifkan fling dan kembalikan posisi awal
+        FlingActive = false
+        KickBtn.BackgroundColor3 = COLORS.BLUE
+        KickBtn.Text = "KICK"
+        
+        if FlingThread then
+            FlingThread = nil
+        end
+        
+        task.defer(function()
+            if lpHRP and OriginalCFrame then
+                lpHRP.AssemblyLinearVelocity = Vector3.zero
+                lpHRP.AssemblyAngularVelocity = Vector3.zero
+                task.wait(0.1)
+                lpHRP.CFrame = OriginalCFrame
+            end
+        end)
+    end
+end)
+
+-- ---------- FOLLOW ----------
+local function stopFollow()
+    FollowActive = false
+    if FollowConnection then FollowConnection:Disconnect() end
+    if FollowAnim then FollowAnim:Stop() end
+    FollowBtn.BackgroundColor3 = COLORS.BLUE
+    FollowBtn.Text = "FOLLOW"
+end
+
+local function startFollowToTarget(target)
+    if not target or not rootPart then return end
+    FollowActive = true
+    FollowBtn.BackgroundColor3 = COLORS.GREEN
+    FollowBtn.Text = "FOLLOWING"
+
+    pcall(function()
+        local anim = Instance.new("Animation")
+        anim.AnimationId = "rbxassetid://100681208320300"
+        FollowAnim = humanoid:LoadAnimation(anim)
+        FollowAnim.Looped = true
+        FollowAnim:Play()
+    end)
+
+    FollowConnection = RunService.Heartbeat:Connect(function()
+        if not FollowActive then return end
+        if not target.Character then stopFollow() return end
+        local targetHRP = target.Character:FindFirstChild("HumanoidRootPart")
+        if not targetHRP then stopFollow() return end
+        rootPart.CFrame = targetHRP.CFrame * CFrame.new(0, 0, 3)
+    end)
+end
+
+FollowBtn.MouseButton1Click:Connect(function()
+    if FollowActive then stopFollow() return end
+    if not CurrentTarget then return end
+    refreshCharacterRefs()
+    startFollowToTarget(CurrentTarget)
+end)
+
+-- ---------- CLOSE ----------
+XBtn.MouseButton1Click:Connect(function()
+    Active = false
+    FlingActive = false
+    if FlingThread then FlingThread = nil end
+    stopFollow()
+    if LP.Character and LP.Character:FindFirstChild("Humanoid") then
+        Cam.CameraSubject = LP.Character:FindFirstChild("Humanoid")
+    end
+    ScreenGui:Destroy()
+end)
+
+Players.PlayerAdded:Connect(refreshTargetList)
+Players.PlayerRemoving:Connect(function()
+    refreshTargetList()
+    if CurrentTarget and not CurrentTarget.Parent then
+        CurrentTarget = nil
+        updateProfile(nil)
+        if FollowActive then stopFollow() end
+        if FlingActive then 
+            FlingActive = false
+            KickBtn.BackgroundColor3 = COLORS.BLUE
+            KickBtn.Text = "KICK"
+        end
+    end
+end)
+
+-- ---------- INIT ----------
+refreshTargetList()
+if #TargetList > 0 then
+    CurrentIndex = 1
+    CurrentTarget = TargetList[1]
+    updateProfile(CurrentTarget)
+end
