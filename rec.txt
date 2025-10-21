@@ -1,0 +1,912 @@
+--===[ GUI Roblox Recorder - Modern Design ]===--
+local HttpService = game:GetService("HttpService")
+local TweenService = game:GetService("TweenService")
+local RunService = game:GetService("RunService")
+local player = game.Players.LocalPlayer
+local screenGui = Instance.new("ScreenGui", player:WaitForChild("PlayerGui"))
+screenGui.ResetOnSpawn = false
+
+-- Modern Color Scheme - Warna lebih terang
+local ColorMain = Color3.fromRGB(35, 35, 45)
+local ColorHeader = Color3.fromRGB(50, 50, 70)
+local ColorCard = Color3.fromRGB(45, 45, 60)
+local ColorButtonNormal = Color3.fromRGB(80, 140, 255)
+local ColorButtonHover = Color3.fromRGB(100, 160, 255)
+local ColorButtonActive = Color3.fromRGB(70, 200, 120)
+local ColorButtonDanger = Color3.fromRGB(255, 100, 100)
+local ColorButtonRepeat = Color3.fromRGB(170, 110, 230)
+local ColorButtonRepeatActive = Color3.fromRGB(80, 210, 130)
+local ColorText = Color3.fromRGB(255, 255, 255)
+local ColorAccent = Color3.fromRGB(100, 180, 255)
+local ColorSuccess = Color3.fromRGB(90, 220, 140)
+local ColorSpeed = Color3.fromRGB(255, 180, 70)
+
+-- Main Frame modern design - DIKECILKAN
+local mainFrame = Instance.new("Frame", screenGui)
+mainFrame.Size = UDim2.new(0, 300, 0, 380)  -- DIKECILKAN dari 320x450
+mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+mainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+mainFrame.Active = true
+mainFrame.Draggable = true
+mainFrame.BackgroundColor3 = ColorMain
+mainFrame.BackgroundTransparency = 0
+
+local mainCorner = Instance.new("UICorner", mainFrame)
+mainCorner.CornerRadius = UDim.new(0, 14)  -- DIKECILKAN dari 16
+
+-- Modern shadow effect
+local shadow = Instance.new("Frame", mainFrame)
+shadow.Size = UDim2.new(1, 6, 1, 6)  -- DIKECILKAN
+shadow.Position = UDim2.new(0, -3, 0, -3)  -- DIKECILKAN
+shadow.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+shadow.BackgroundTransparency = 0.7
+shadow.ZIndex = -1
+local shadowCorner = Instance.new("UICorner", shadow)
+shadowCorner.CornerRadius = UDim.new(0, 16)  -- DIKECILKAN
+
+-- Header modern - DIKECILKAN
+local header = Instance.new("Frame", mainFrame)
+header.Size = UDim2.new(1, 0, 0, 40)  -- DIKECILKAN dari 50
+header.BackgroundColor3 = ColorHeader
+header.BorderSizePixel = 0
+
+local headerCorner = Instance.new("UICorner", header)
+headerCorner.CornerRadius = UDim.new(0, 14)  -- DIKECILKAN
+
+local title = Instance.new("TextLabel", header)
+title.Size = UDim2.new(0, 180, 1, 0)  -- DIKECILKAN
+title.Position = UDim2.new(0, 15, 0, 0)  -- DIKECILKAN
+title.Text = "🎮 JSY RECORDER"
+title.TextColor3 = ColorText
+title.BackgroundTransparency = 1
+title.Font = Enum.Font.GothamBlack
+title.TextSize = 16  -- DIKECILKAN
+title.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Modern Button Function
+local function createModernButton(parent, text, position, size, color, icon, isIconOnly)
+    local btn = Instance.new("TextButton", parent)
+    btn.Size = size
+    btn.Position = position
+    btn.Text = isIconOnly and icon or (icon .. "  " .. text)
+    btn.BackgroundColor3 = color
+    btn.TextColor3 = ColorText
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = isIconOnly and 14 or 12  -- DIKECILKAN
+    btn.AutoButtonColor = false
+    btn.BorderSizePixel = 0
+    
+    local btnCorner = Instance.new("UICorner", btn)
+    btnCorner.CornerRadius = UDim.new(0, 10)  -- DIKECILKAN
+    
+    local glow = Instance.new("Frame", btn)
+    glow.Size = UDim2.new(1, 4, 1, 4)
+    glow.Position = UDim2.new(0, -2, 0, -2)
+    glow.BackgroundColor3 = color
+    glow.BackgroundTransparency = 0.8
+    glow.ZIndex = -1
+    local glowCorner = Instance.new("UICorner", glow)
+    glowCorner.CornerRadius = UDim.new(0, 12)  -- DIKECILKAN
+    
+    local lighterColor = Color3.new(
+        math.min(color.R * 1.2, 1),
+        math.min(color.G * 1.2, 1),
+        math.min(color.B * 1.2, 1)
+    )
+    
+    btn.MouseEnter:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.2), {
+            Size = size + UDim2.new(0, 4, 0, 4),
+            BackgroundColor3 = lighterColor
+        }):Play()
+        TweenService:Create(glow, TweenInfo.new(0.2), {
+            BackgroundTransparency = 0.6,
+            Size = UDim2.new(1, 8, 1, 8),
+            Position = UDim2.new(0, -4, 0, -4)
+        }):Play()
+    end)
+    
+    btn.MouseLeave:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.2), {
+            Size = size,
+            BackgroundColor3 = color
+        }):Play()
+        TweenService:Create(glow, TweenInfo.new(0.2), {
+            BackgroundTransparency = 0.8,
+            Size = UDim2.new(1, 4, 1, 4),
+            Position = UDim2.new(0, -2, 0, -2)
+        }):Play()
+    end)
+    
+    btn.MouseButton1Down:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.1), {
+            Size = size - UDim2.new(0, 2, 0, 2)
+        }):Play()
+    end)
+    
+    btn.MouseButton1Up:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.1), {
+            Size = size
+        }):Play()
+    end)
+    
+    return btn
+end
+
+-- Header Buttons modern - DIKECILKAN
+local closeBtn = createModernButton(header, "", UDim2.new(1, -40, 0.5, -12), UDim2.new(0, 26, 0, 26), ColorButtonDanger, "❌", true)
+local hideBtn = createModernButton(header, "", UDim2.new(1, -75, 0.5, -12), UDim2.new(0, 26, 0, 26), Color3.fromRGB(255, 190, 70), "⏏️", true)
+
+-- Control Section modern - DIKECILKAN
+local controlSection = Instance.new("Frame", mainFrame)
+controlSection.Size = UDim2.new(1, -20, 0, 90)  -- DIKECILKAN
+controlSection.Position = UDim2.new(0, 10, 0, 50)  -- DIKECILKAN
+controlSection.BackgroundColor3 = ColorCard
+controlSection.BackgroundTransparency = 0
+
+local controlCorner = Instance.new("UICorner", controlSection)
+controlCorner.CornerRadius = UDim.new(0, 12)  -- DIKECILKAN
+
+local controlTitle = Instance.new("TextLabel", controlSection)
+controlTitle.Size = UDim2.new(1, 0, 0, 20)  -- DIKECILKAN
+controlTitle.Position = UDim2.new(0, 12, 0, 6)  -- DIKECILKAN
+controlTitle.Text = "CONTROLS"
+controlTitle.TextColor3 = ColorAccent
+controlTitle.BackgroundTransparency = 1
+controlTitle.Font = Enum.Font.GothamBold
+controlTitle.TextSize = 13  -- DIKECILKAN
+controlTitle.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Control Buttons modern - DIKECILKAN
+local recordBtn = createModernButton(controlSection, "RECORD", UDim2.new(0, 12, 0, 28), UDim2.new(0.46, 0, 0, 26), ColorButtonNormal, "⏺️", false)
+local stopBtn = createModernButton(controlSection, "STOP", UDim2.new(0.52, 0, 0, 28), UDim2.new(0.46, 0, 0, 26), ColorButtonDanger, "⏹️", false)
+
+local repeatBtn = createModernButton(controlSection, "REPEAT", UDim2.new(0, 12, 0, 60), UDim2.new(0.46, 0, 0, 26), ColorButtonRepeat, "🔁", false)
+local respawnBtn = createModernButton(controlSection, "AUTO RESPAWN", UDim2.new(0.52, 0, 0, 60), UDim2.new(0.46, 0, 0, 26), Color3.fromRGB(90, 170, 250), "🔄", false)
+
+-- Speed Control Section - DIKECILKAN
+local speedSection = Instance.new("Frame", mainFrame)
+speedSection.Size = UDim2.new(1, -20, 0, 40)  -- DIKECILKAN
+speedSection.Position = UDim2.new(0, 10, 0, 150)  -- DIKECILKAN
+speedSection.BackgroundColor3 = ColorCard
+speedSection.BackgroundTransparency = 0
+
+local speedCorner = Instance.new("UICorner", speedSection)
+speedCorner.CornerRadius = UDim.new(0, 12)  -- DIKECILKAN
+
+local speedTitle = Instance.new("TextLabel", speedSection)
+speedTitle.Size = UDim2.new(0.4, 0, 1, 0)
+speedTitle.Position = UDim2.new(0, 12, 0, 0)
+speedTitle.Text = "⚡ SPEED: 1.0x"
+speedTitle.TextColor3 = ColorSpeed
+speedTitle.BackgroundTransparency = 1
+speedTitle.Font = Enum.Font.GothamBold
+speedTitle.TextSize = 12  -- DIKECILKAN
+speedTitle.TextXAlignment = Enum.TextXAlignment.Left
+
+local speedDownBtn = createModernButton(speedSection, "", UDim2.new(0.4, 5, 0.2, 0), UDim2.new(0.12, 0, 0.6, 0), ColorSpeed, "➖", true)
+local speedResetBtn = createModernButton(speedSection, "", UDim2.new(0.55, 5, 0.2, 0), UDim2.new(0.12, 0, 0.6, 0), Color3.fromRGB(100, 100, 150), "⏹️", true)
+local speedUpBtn = createModernButton(speedSection, "", UDim2.new(0.7, 5, 0.2, 0), UDim2.new(0.12, 0, 0.6, 0), ColorSpeed, "➕", true)
+
+-- Timer Section modern - DIKECILKAN
+local timerSection = Instance.new("Frame", mainFrame)
+timerSection.Size = UDim2.new(1, -20, 0, 55)  -- DIKECILKAN
+timerSection.Position = UDim2.new(0, 10, 0, 200)  -- DIKECILKAN
+timerSection.BackgroundColor3 = ColorCard
+timerSection.BackgroundTransparency = 0
+
+local timerCorner = Instance.new("UICorner", timerSection)
+timerCorner.CornerRadius = UDim.new(0, 12)  -- DIKECILKAN
+
+local timerTitle = Instance.new("TextLabel", timerSection)
+timerTitle.Size = UDim2.new(1, -20, 0, 18)  -- DIKECILKAN
+timerTitle.Position = UDim2.new(0, 12, 0, 6)  -- DIKECILKAN
+timerTitle.Text = "RECORDING TIMER"
+timerTitle.TextColor3 = Color3.fromRGB(200, 200, 220)
+timerTitle.BackgroundTransparency = 1
+timerTitle.Font = Enum.Font.GothamBold
+timerTitle.TextSize = 11  -- DIKECILKAN
+timerTitle.TextXAlignment = Enum.TextXAlignment.Left
+
+local timerLabel = Instance.new("TextLabel", timerSection)
+timerLabel.Size = UDim2.new(1, -20, 0, 28)  -- DIKECILKAN
+timerLabel.Position = UDim2.new(0, 12, 0, 24)  -- DIKECILKAN
+timerLabel.BackgroundTransparency = 1
+timerLabel.Text = "00:00.00"
+timerLabel.TextColor3 = ColorAccent
+timerLabel.Font = Enum.Font.GothamBlack
+timerLabel.TextSize = 20  -- DIKECILKAN
+timerLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Recording Display modern - DIKECILKAN
+local recordingSection = Instance.new("Frame", mainFrame)
+recordingSection.Size = UDim2.new(1, -20, 0, 100)  -- DIKECILKAN
+recordingSection.Position = UDim2.new(0, 10, 0, 265)  -- DIKECILKAN
+recordingSection.BackgroundColor3 = ColorCard
+recordingSection.BackgroundTransparency = 0
+
+local recordingCorner = Instance.new("UICorner", recordingSection)
+recordingCorner.CornerRadius = UDim.new(0, 12)  -- DIKECILKAN
+
+local recordingTitle = Instance.new("TextLabel", recordingSection)
+recordingTitle.Size = UDim2.new(1, -20, 0, 20)  -- DIKECILKAN
+recordingTitle.Position = UDim2.new(0, 12, 0, 6)  -- DIKECILKAN
+recordingTitle.Text = "CURRENT RECORDING"
+recordingTitle.TextColor3 = ColorAccent
+recordingTitle.BackgroundTransparency = 1
+recordingTitle.Font = Enum.Font.GothamBold
+recordingTitle.TextSize = 13  -- DIKECILKAN
+recordingTitle.TextXAlignment = Enum.TextXAlignment.Left
+
+local recordingContent = Instance.new("Frame", recordingSection)
+recordingContent.Size = UDim2.new(1, -20, 0, 70)  -- DIKECILKAN
+recordingContent.Position = UDim2.new(0, 10, 0, 28)  -- DIKECILKAN
+recordingContent.BackgroundTransparency = 1
+recordingContent.ClipsDescendants = true
+
+local noRecordingLabel = Instance.new("TextLabel", recordingContent)
+noRecordingLabel.Size = UDim2.new(1, 0, 1, 0)
+noRecordingLabel.BackgroundTransparency = 1
+noRecordingLabel.Text = "No active recording\nClick RECORD to start capturing"
+noRecordingLabel.TextColor3 = Color3.fromRGB(160, 160, 180)
+noRecordingLabel.Font = Enum.Font.GothamMedium
+noRecordingLabel.TextSize = 12  -- DIKECILKAN
+noRecordingLabel.TextWrapped = true
+
+-- Mini Button modern - DIKECILKAN
+local miniBtn = createModernButton(screenGui, "RECORDER", UDim2.new(0, 20, 0, 120), UDim2.new(0, 120, 0, 35), ColorButtonNormal, "⏺️", false)
+miniBtn.Visible = false
+miniBtn.Active = true
+miniBtn.Draggable = true
+
+-- ==================== LOGIC ====================
+local char = player.Character or player.CharacterAdded:Wait()
+local humanoid = char:WaitForChild("Humanoid")
+local hrp = char:WaitForChild("HumanoidRootPart")
+
+-- VARIABEL BARU: Play/Pause System
+local isPaused = false
+local currentFrameIndex = 1
+local currentProgress = 0
+
+-- VARIABEL: Speed Control
+local currentSpeed = 1.0
+local speedMultipliers = {0.25, 0.5, 0.75, 1.0, 1.25, 1.5, 2.0, 3.0, 5.0}
+local currentSpeedIndex = 4
+
+-- Fungsi update speed display
+local function updateSpeedDisplay()
+    speedTitle.Text = "⚡ SPEED: " .. currentSpeed .. "x"
+    
+    TweenService:Create(speedTitle, TweenInfo.new(0.2), {
+        TextColor3 = Color3.fromRGB(255, 255, 150)
+    }):Play()
+    
+    task.wait(0.3)
+    
+    TweenService:Create(speedTitle, TweenInfo.new(0.2), {
+        TextColor3 = ColorSpeed
+    }):Play()
+end
+
+-- Speed Control Functions
+local function decreaseSpeed()
+    if currentSpeedIndex > 1 then
+        currentSpeedIndex = currentSpeedIndex - 1
+        currentSpeed = speedMultipliers[currentSpeedIndex]
+        updateSpeedDisplay()
+        
+        TweenService:Create(speedDownBtn, TweenInfo.new(0.1), {
+            BackgroundColor3 = Color3.fromRGB(255, 150, 50)
+        }):Play()
+        task.wait(0.2)
+        TweenService:Create(speedDownBtn, TweenInfo.new(0.1), {
+            BackgroundColor3 = ColorSpeed
+        }):Play()
+    end
+end
+
+local function resetSpeed()
+    currentSpeedIndex = 4
+    currentSpeed = speedMultipliers[currentSpeedIndex]
+    updateSpeedDisplay()
+    
+    TweenService:Create(speedResetBtn, TweenInfo.new(0.1), {
+        BackgroundColor3 = Color3.fromRGB(100, 200, 255)
+    }):Play()
+    task.wait(0.2)
+    TweenService:Create(speedResetBtn, TweenInfo.new(0.1), {
+        BackgroundColor3 = Color3.fromRGB(100, 100, 150)
+    }):Play()
+end
+
+local function increaseSpeed()
+    if currentSpeedIndex < #speedMultipliers then
+        currentSpeedIndex = currentSpeedIndex + 1
+        currentSpeed = speedMultipliers[currentSpeedIndex]
+        updateSpeedDisplay()
+        
+        TweenService:Create(speedUpBtn, TweenInfo.new(0.1), {
+            BackgroundColor3 = Color3.fromRGB(255, 150, 50)
+        }):Play()
+        task.wait(0.2)
+        TweenService:Create(speedUpBtn, TweenInfo.new(0.1), {
+            BackgroundColor3 = ColorSpeed
+        }):Play()
+    end
+end
+
+speedDownBtn.MouseButton1Click:Connect(decreaseSpeed)
+speedResetBtn.MouseButton1Click:Connect(resetSpeed)
+speedUpBtn.MouseButton1Click:Connect(increaseSpeed)
+
+-- Sistem animasi lari otomatis
+local runAnimTrack
+local isReplaying = false
+
+local function playRunAnimation()
+    if not isReplaying then return end
+    
+    local animate = char:FindFirstChild("Animate")
+    if not animate then return end
+
+    if runAnimTrack then
+        runAnimTrack:Stop()
+    end
+
+    runAnimTrack = humanoid:LoadAnimation(animate.run.RunAnim)
+    runAnimTrack.Looped = true
+    runAnimTrack:Play()
+    return runAnimTrack
+end
+
+humanoid.StateChanged:Connect(function(_, newState)
+    if runAnimTrack and isReplaying then
+        if newState == Enum.HumanoidStateType.Jumping or newState == Enum.HumanoidStateType.Freefall then
+            runAnimTrack:Stop()
+        elseif newState == Enum.HumanoidStateType.Running or newState == Enum.HumanoidStateType.RunningNoPhysics then
+            if not runAnimTrack.IsPlaying then
+                runAnimTrack:Play()
+            end
+        end
+    end
+end)
+
+player.CharacterAdded:Connect(function(newChar)
+    char = newChar
+    humanoid = char:WaitForChild("Humanoid")
+    hrp = char:WaitForChild("HumanoidRootPart")
+
+    task.wait(0.5)
+
+    local animate = char:FindFirstChild("Animate")
+    if animate and animate:FindFirstChild("run") and animate.run:FindFirstChild("RunAnim") then
+        runAnimTrack = humanoid:LoadAnimation(animate.run.RunAnim)
+        runAnimTrack.Looped = true
+    end
+
+    humanoid.StateChanged:Connect(function(_, newState)
+        if runAnimTrack and isReplaying then
+            if newState == Enum.HumanoidStateType.Jumping or newState == Enum.HumanoidStateType.Freefall then
+                runAnimTrack:Stop()
+            elseif newState == Enum.HumanoidStateType.Running or newState == Enum.HumanoidStateType.RunningNoPhysics then
+                if not runAnimTrack.IsPlaying then
+                    runAnimTrack:Play()
+                end
+            end
+        end
+    end)
+
+    if _G.RecordSystem then
+        _G.RecordSystem:SetCharacter(char)
+    end
+end)
+
+local recording = false
+local recordData = {}
+local startTime = 0
+local timerRunning = false
+local replaying = false
+local autoRespawn = true
+local currentRecordingName = nil
+local globalRepeatMode = false
+
+local playerScripts = player:WaitForChild("PlayerScripts")
+if not playerScripts:FindFirstChild("SavedRecords") then
+    local savedFolder = Instance.new("Folder")
+    savedFolder.Name = "SavedRecords"
+    savedFolder.Parent = playerScripts
+end
+local savedFolder = playerScripts:FindFirstChild("SavedRecords")
+
+humanoid.Jumping:Connect(function(active)
+    if recording and active then
+        table.insert(recordData,{
+            pos = hrp.Position,
+            cframe = hrp.CFrame,
+            jump = true,
+            time = tick()-startTime
+        })
+    end
+end)
+
+-- Stopwatch Timer
+local function runStopwatch()
+    while timerRunning do
+        local elapsed = tick()-startTime
+        local mins = math.floor(elapsed/60)
+        local secs = math.floor(elapsed%60)
+        local ms = math.floor((elapsed - math.floor(elapsed))*100)
+        timerLabel.Text = string.format("%02d:%02d.%02d",mins,secs,ms)
+        task.wait(0.03)
+    end
+end
+
+-- Tampilkan recording dengan tombol Play/Pause - DIKECILKAN
+local function displayRecording(data, name)
+    for _, child in ipairs(recordingContent:GetChildren()) do
+        child:Destroy()
+    end
+    
+    currentRecordingName = name
+    
+    local nameLabel = Instance.new("TextLabel", recordingContent)
+    nameLabel.Size = UDim2.new(0.65, -5, 0.4, 0)
+    nameLabel.Position = UDim2.new(0, 0, 0, 5)
+    nameLabel.Text = "📁 " .. name
+    nameLabel.BackgroundTransparency = 1
+    nameLabel.TextColor3 = ColorText
+    nameLabel.Font = Enum.Font.GothamBold
+    nameLabel.TextSize = 12  -- DIKECILKAN
+    nameLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+    local duration = data[#data] and data[#data].time or 0
+    local durationLabel = Instance.new("TextLabel", recordingContent)
+    durationLabel.Size = UDim2.new(0.65, -5, 0.3, 0)
+    durationLabel.Position = UDim2.new(0, 0, 0, 35)  -- DIKECILKAN
+    durationLabel.Text = string.format("⏱️ %02d:%02d | 📊 %d frames", math.floor(duration/60), math.floor(duration%60), #data)
+    durationLabel.BackgroundTransparency = 1
+    durationLabel.TextColor3 = Color3.fromRGB(200, 200, 220)
+    durationLabel.Font = Enum.Font.GothamMedium
+    durationLabel.TextSize = 10  -- DIKECILKAN
+    durationLabel.TextXAlignment = Enum.TextXAlignment.Left
+
+    local buttonContainer = Instance.new("Frame", recordingContent)
+    buttonContainer.Size = UDim2.new(0.35, 0, 0.8, 0)
+    buttonContainer.Position = UDim2.new(0.65, 0, 0.1, 0)
+    buttonContainer.BackgroundTransparency = 1
+
+    -- TOMBOL PLAY/PAUSE DAN DELETE - DIKECILKAN
+    local playPauseBtn = createModernButton(buttonContainer, "PLAY", UDim2.new(0, 0, 0, 0), UDim2.new(1, 0, 0.45, 0), ColorSuccess, "▶️", false)
+    local delBtn = createModernButton(buttonContainer, "DEL", UDim2.new(0, 0, 0.55, 0), UDim2.new(1, 0, 0.45, 0), ColorButtonDanger, "🗑️", false)
+
+    local progressBG = Instance.new("Frame", recordingContent)
+    progressBG.Size = UDim2.new(1, 0, 0, 4)  -- DIKECILKAN
+    progressBG.Position = UDim2.new(0, 0, 0.9, 0)
+    progressBG.BackgroundColor3 = Color3.fromRGB(60, 60, 80)
+    progressBG.BorderSizePixel = 0
+    
+    local progressCorner = Instance.new("UICorner", progressBG)
+    progressCorner.CornerRadius = UDim.new(1, 0)
+
+    local progressBar = Instance.new("Frame", progressBG)
+    progressBar.Size = UDim2.new(0, 0, 1, 0)
+    progressBar.Position = UDim2.new(0, 0, 0, 0)
+    progressBar.BackgroundColor3 = ColorAccent
+    progressBar.BorderSizePixel = 0
+    
+    local progressBarCorner = Instance.new("UICorner", progressBar)
+    progressBarCorner.CornerRadius = UDim.new(1, 0)
+
+    -- VARIABEL UNTUK PLAY/PAUSE
+    local currentReplayData = data
+    local currentFrameIndex = 1
+    local currentProgress = 0
+
+    -- FUNGSI TOGGLE PLAY/PAUSE YANG DIPERBAIKI
+    local function togglePlayPause()
+        if replaying then
+            -- PAUSE - simpan progress saat ini
+            isPaused = true
+            replaying = false
+            isReplaying = false
+            
+            playPauseBtn.Text = "▶️ PLAY"
+            TweenService:Create(playPauseBtn, TweenInfo.new(0.3), {
+                BackgroundColor3 = ColorSuccess
+            }):Play()
+            
+            if runAnimTrack then
+                runAnimTrack:Stop()
+            end
+            
+        else
+            -- PLAY/RESUME - gunakan progress yang disimpan
+            isPaused = false
+            replaying = true
+            isReplaying = true
+            
+            playPauseBtn.Text = "⏸️ PAUSE"
+            TweenService:Create(playPauseBtn, TweenInfo.new(0.3), {
+                BackgroundColor3 = Color3.fromRGB(255, 180, 70)
+            }):Play()
+            
+            -- JALANKAN REPLAY DENGAN RESUME
+            spawn(function()
+                local runAnim = playRunAnimation()
+                
+                -- Apply speed multiplier
+                local adjustedData = {}
+                if currentSpeed ~= 1.0 then
+                    for i, frame in ipairs(currentReplayData) do
+                        local adjustedFrame = {
+                            pos = frame.pos,
+                            cframe = frame.cframe,
+                            jump = frame.jump,
+                            time = frame.time / currentSpeed
+                        }
+                        table.insert(adjustedData, adjustedFrame)
+                    end
+                else
+                    adjustedData = currentReplayData
+                end
+                
+                local useData = currentSpeed == 1.0 and currentReplayData or adjustedData
+                
+                repeat
+                    if not isPaused then
+                        task.wait(0.2)
+
+                        if #useData > 0 then
+                            if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+                                player.CharacterAdded:Wait()
+                                char = player.Character
+                                humanoid = char:WaitForChild("Humanoid")
+                                hrp = char:WaitForChild("HumanoidRootPart")
+                                task.wait(0.2)
+                            end
+
+                            if not isPaused then
+                                -- Gunakan frame index yang disimpan untuk resume
+                                local startIndex = currentFrameIndex
+                                if startIndex <= 1 then
+                                    startIndex = 2
+                                    local initialCFrame = useData[1].cframe or CFrame.new(useData[1].pos)
+                                    hrp.CFrame = initialCFrame
+                                end
+                                
+                                local lastGoodLookVector = hrp.CFrame.LookVector
+                                
+                                for i = startIndex, #useData do
+                                    while isPaused do
+                                        task.wait(0.1)
+                                        if not replaying then break end
+                                    end
+                                    
+                                    if not replaying then break end
+                                    
+                                    local frame = useData[i]
+                                    local prevFrame = useData[i - 1]
+
+                                    local duration = frame.time - prevFrame.time
+                                    if duration < 0.03 then duration = 0.03 end
+
+                                    local startTime = tick()
+                                    local endTime = startTime + duration
+                                    
+                                    while tick() < endTime and replaying do
+                                        while isPaused do
+                                            task.wait(0.1)
+                                            if not replaying then break end
+                                        end
+                                        if not replaying then break end
+                                        
+                                        local alpha = (tick() - startTime) / duration
+                                        alpha = math.min(alpha, 1)
+                                        
+                                        local currentPos = prevFrame.cframe.Position:Lerp(frame.cframe.Position, alpha)
+                                        local currentLookVector = prevFrame.cframe.LookVector:Lerp(frame.cframe.LookVector, alpha).Unit
+                                        
+                                        hrp.CFrame = CFrame.lookAt(currentPos, currentPos + currentLookVector)
+                                        
+                                        if frame.jump and alpha > 0.3 and alpha < 0.7 then
+                                            if humanoid:GetState() ~= Enum.HumanoidStateType.Jumping then
+                                                humanoid:ChangeState(Enum.HumanoidStateType.Jumping)
+                                                lastGoodLookVector = currentLookVector
+                                            end
+                                        end
+                                        
+                                        task.wait(0.016)
+                                    end
+
+                                    if replaying and not isPaused then
+                                        hrp.CFrame = frame.cframe or CFrame.new(frame.pos)
+                                        lastGoodLookVector = frame.cframe.LookVector
+                                        
+                                        -- SIMPAN PROGRESS SAAT INI
+                                        currentFrameIndex = i
+                                        currentProgress = i / #useData
+                                        
+                                        -- Update progress bar
+                                        TweenService:Create(progressBar, TweenInfo.new(0.03), {
+                                            Size = UDim2.new(currentProgress, 0, 1, 0)
+                                        }):Play()
+                                    end
+                                end
+                                
+                                if not isPaused then
+                                    TweenService:Create(progressBar, TweenInfo.new(0.2), {
+                                        Size = UDim2.new(0, 0, 1, 0)
+                                    }):Play()
+                                    -- Reset progress saat selesai
+                                    currentFrameIndex = 1
+                                    currentProgress = 0
+                                end
+
+                                if autoRespawn and player.Character:FindFirstChild("Humanoid") and not isPaused then
+                                    player.Character.Humanoid.Health = 0
+                                    task.wait(3)
+                                end
+                            end
+                        end
+                    end
+
+                    if globalRepeatMode and replaying and not isPaused then
+                        if not player.Character or not player.Character:FindFirstChild("HumanoidRootPart") then
+                            player.CharacterAdded:Wait()
+                            char = player.Character
+                            humanoid = char:WaitForChild("Humanoid")
+                            hrp = char:WaitForChild("HumanoidRootPart")
+                            task.wait(1)
+                        end
+                        -- Reset progress untuk repeat
+                        currentFrameIndex = 1
+                        currentProgress = 0
+                    end
+                until not globalRepeatMode or not replaying or isPaused
+                
+                if not isPaused then
+                    isReplaying = false
+                    replaying = false
+                    if runAnim then
+                        runAnim:Stop()
+                    end
+                    
+                    playPauseBtn.Text = "▶️ PLAY"
+                    TweenService:Create(playPauseBtn, TweenInfo.new(0.3), {
+                        BackgroundColor3 = ColorSuccess
+                    }):Play()
+                end
+            end)
+        end
+    end
+
+    playPauseBtn.MouseButton1Click:Connect(togglePlayPause)
+    
+    delBtn.MouseButton1Click:Connect(function()
+        if replaying then 
+            replaying = false 
+            isReplaying = false
+            isPaused = false
+        end
+        
+        TweenService:Create(delBtn, TweenInfo.new(0.3), {
+            BackgroundColor3 = Color3.fromRGB(200, 80, 80)
+        }):Play()
+        
+        task.wait(0.3)
+        
+        for _, child in ipairs(recordingContent:GetChildren()) do
+            child:Destroy()
+        end
+        
+        local newNoRecordingLabel = Instance.new("TextLabel", recordingContent)
+        newNoRecordingLabel.Size = UDim2.new(1, 0, 1, 0)
+        newNoRecordingLabel.BackgroundTransparency = 1
+        newNoRecordingLabel.Text = "No active recording\nClick RECORD to start capturing"
+        newNoRecordingLabel.TextColor3 = Color3.fromRGB(160, 160, 180)
+        newNoRecordingLabel.Font = Enum.Font.GothamMedium
+        newNoRecordingLabel.TextSize = 12
+        newNoRecordingLabel.TextWrapped = true
+        
+        for _, child in ipairs(savedFolder:GetChildren()) do
+            if child.Name == currentRecordingName then
+                child:Destroy()
+                break
+            end
+        end
+        currentRecordingName = nil
+    end)
+end
+
+-- Start Recording
+local function startRecording()
+    recordData = {}
+    startTime = tick()
+    recording = true
+    timerRunning = true
+    timerLabel.Text = "00:00.00"
+    spawn(runStopwatch)
+    
+    spawn(function()
+        local lastPos = hrp.Position
+        local lastTime = tick()
+        
+        while recording do
+            local currentTime = tick()
+            local currentPos = hrp.Position
+            local currentCFrame = hrp.CFrame
+            
+            if (currentPos - lastPos).Magnitude > 0.1 or (currentTime - lastTime) > 0.3 then
+                table.insert(recordData, {
+                    pos = currentPos,
+                    cframe = currentCFrame,
+                    jump = false,
+                    time = currentTime - startTime
+                })
+                lastPos = currentPos
+                lastTime = currentTime
+            end
+            
+            task.wait(0.1)
+        end
+    end)
+    
+    TweenService:Create(recordBtn, TweenInfo.new(0.3), {
+        BackgroundColor3 = ColorButtonActive
+    }):Play()
+    recordBtn.Text = "🔴 RECORDING"
+    
+    task.wait(0.5)
+    
+    TweenService:Create(mainFrame, TweenInfo.new(0.4), {
+        Size = UDim2.new(0, 0, 0, 0)
+    }):Play()
+    
+    task.wait(0.4)
+    mainFrame.Visible = false
+    miniBtn.Visible = true
+    miniBtn.Text = "🔴 RECORDING"
+    TweenService:Create(miniBtn, TweenInfo.new(0.3), {
+        BackgroundColor3 = ColorButtonDanger
+    }):Play()
+end
+
+-- Stop Recording
+local function stopRecording()
+    recording = false
+    timerRunning = false
+    isReplaying = false
+    isPaused = false
+
+    TweenService:Create(recordBtn, TweenInfo.new(0.3), {
+        BackgroundColor3 = ColorButtonNormal
+    }):Play()
+    recordBtn.Text = "⏺️ RECORD"
+
+    TweenService:Create(stopBtn, TweenInfo.new(0.3), {
+        BackgroundColor3 = ColorSuccess
+    }):Play()
+    task.delay(0.4, function()
+        TweenService:Create(stopBtn, TweenInfo.new(0.3), {
+            BackgroundColor3 = ColorButtonDanger
+        }):Play()
+    end)
+
+    timerLabel.Text = "00:00.00"
+    miniBtn.Text = "⏺️ RECORDER"
+    TweenService:Create(miniBtn, TweenInfo.new(0.3), {
+        BackgroundColor3 = ColorButtonNormal
+    }):Play()
+
+    if runAnimTrack and runAnimTrack.IsPlaying then
+        runAnimTrack:Stop()
+    end
+
+    if #recordData > 0 then
+        local saveVal = Instance.new("StringValue")
+        saveVal.Name = "REC_" .. tostring(os.time())
+        saveVal.Value = HttpService:JSONEncode(recordData)
+        saveVal.Parent = savedFolder
+
+        displayRecording(recordData, saveVal.Name)
+        recordData = {}
+    end
+end
+
+-- Load existing recording
+local savedRecordings = savedFolder:GetChildren()
+if #savedRecordings > 0 then
+    local child = savedRecordings[1]
+    if child:IsA("StringValue") then
+        local success, data = pcall(function()
+            return HttpService:JSONDecode(child.Value)
+        end)
+        if success then
+            displayRecording(data, child.Name)
+        end
+    end
+end
+
+-- Animasi minimize/unminimize
+local function minimizeGUI()
+    TweenService:Create(mainFrame, TweenInfo.new(0.4), {
+        Size = UDim2.new(0, 0, 0, 0)
+    }):Play()
+    
+    task.wait(0.4)
+    mainFrame.Visible = false
+    miniBtn.Visible = true
+end
+
+local function unminimizeGUI()
+    miniBtn.Visible = false
+    mainFrame.Visible = true
+    mainFrame.Size = UDim2.new(0, 0, 0, 0)
+    mainFrame.Position = UDim2.new(0.5, 0, 0.5, 0)
+    
+    TweenService:Create(mainFrame, TweenInfo.new(0.4), {
+        Size = UDim2.new(0, 300, 0, 380)  -- DIKECILKAN
+    }):Play()
+end
+
+-- Tombol connections
+recordBtn.MouseButton1Click:Connect(startRecording)
+stopBtn.MouseButton1Click:Connect(stopRecording)
+
+repeatBtn.MouseButton1Click:Connect(function()
+    globalRepeatMode = not globalRepeatMode
+    if globalRepeatMode then
+        TweenService:Create(repeatBtn, TweenInfo.new(0.3), {
+            BackgroundColor3 = ColorButtonRepeatActive
+        }):Play()
+        repeatBtn.Text = "✅ REPEAT"
+    else
+        TweenService:Create(repeatBtn, TweenInfo.new(0.3), {
+            BackgroundColor3 = ColorButtonRepeat
+        }):Play()
+        repeatBtn.Text = "🔁 REPEAT"
+    end
+end)
+
+respawnBtn.MouseButton1Click:Connect(function()
+    autoRespawn = not autoRespawn
+    if autoRespawn then
+        respawnBtn.Text="✅ AUTO RESPAWN"
+        TweenService:Create(respawnBtn, TweenInfo.new(0.3), {
+            BackgroundColor3 = Color3.fromRGB(100, 180, 255)
+        }):Play()
+    else
+        respawnBtn.Text="❌ AUTO RESPAWN"
+        TweenService:Create(respawnBtn, TweenInfo.new(0.3), {
+            BackgroundColor3 = ColorButtonDanger
+        }):Play()
+    end
+end)
+
+closeBtn.MouseButton1Click:Connect(function()
+    replaying = false
+    recording = false
+    timerRunning = false
+    isReplaying = false
+    isPaused = false
+    globalRepeatMode = false
+    
+    TweenService:Create(mainFrame, TweenInfo.new(0.4), {
+        Size = UDim2.new(0, 0, 0, 0),
+        BackgroundTransparency = 1
+    }):Play()
+    
+    TweenService:Create(shadow, TweenInfo.new(0.4), {
+        BackgroundTransparency = 1
+    }):Play()
+    
+    task.wait(0.4)
+    screenGui:Destroy()
+end)
+
+hideBtn.MouseButton1Click:Connect(minimizeGUI)
+miniBtn.MouseButton1Click:Connect(unminimizeGUI)
+
+-- INITIALIZE SPEED DISPLAY
+updateSpeedDisplay()
