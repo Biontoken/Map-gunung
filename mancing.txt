@@ -361,7 +361,7 @@ local UpdateFishingRadar = net:WaitForChild("RF/UpdateFishingRadar")
 local SellAllItems = net:WaitForChild("RF/SellAllItems")
 
 -- Variabel GLOBAL untuk state (DIPERBAIKI)
-local minigameDelay = 2.5
+local minigameDelay = 1.5
 local running = false
 local radarActive = false
 local autoTouchActive = false
@@ -976,5 +976,6 @@ end)
 closeBtn.MouseLeave:Connect(function()
 	game:GetService("TweenService"):Create(closeBtn, TweenInfo.new(0.2), {BackgroundColor3 = Color3.fromRGB(255, 80, 80)}):Play()
 end)
+
 
 switchTab("Fishing")
