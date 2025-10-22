@@ -691,7 +691,7 @@ SpeedBtn.MouseButton1Click:Connect(function()
     local hum = char:FindFirstChild("Humanoid")
 
     if speedOn then
-        if hum then hum.WalkSpeed = 100 end
+        if hum then hum.WalkSpeed = 50 end
         addSelendang(char)
         setButtonActive(SpeedBtn, true)
     else
@@ -706,7 +706,7 @@ Player.CharacterAdded:Connect(function(char)
     local hum = char:WaitForChild("Humanoid")
     task.wait(0.2)
     if speedOn then
-        hum.WalkSpeed = 100
+        hum.WalkSpeed =100
         addSelendang(char)
         setButtonActive(SpeedBtn, true)
     else
@@ -1570,4 +1570,5 @@ BringPartBtn.LayoutOrder = 9
 AntiLagBtn.LayoutOrder = 10
 PrivateServerBtn.LayoutOrder = 11
 RecBtn.LayoutOrder = 12
+
 SpectatorBtn.LayoutOrder = 13
