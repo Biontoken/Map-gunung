@@ -1,0 +1,697 @@
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local player = Players.LocalPlayer
+local coregui = game:GetService("CoreGui")
+
+-- Clean previous GUIs
+for _, name in ipairs({"JSY_FISH", "JSY_FISH"}) do
+    local g = coregui:FindFirstChild(name)
+    if g then g:Destroy() end
+end
+
+-- Remote helper (graceful if missing)
+local function findNet()
+    local ok, net = pcall(function()
+        return ReplicatedStorage:WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_net@0.2.0"):WaitForChild("net")
+    end)
+    if ok then return net end
+    return nil
+end
+local net = findNet()
+
+local function getRemote(name)
+    if typeof(net) == "Instance" then
+        return net:FindFirstChild(name)
+    end
+    return nil
+end
+
+local UpdateFishingRadar = getRemote("RF/UpdateFishingRadar")
+local SellAllItems = getRemote("RF/SellAllItems")
+
+local function safeInvoke(remote, args)
+    if not remote then return false end
+    local ok, res = pcall(function() return remote:InvokeServer(unpack(args or {})) end)
+    return ok, res
+end
+
+-- States
+local running = false
+local frozen = false
+local freezePos = nil
+local freezeConnection = nil
+local radarActive = false
+local autoClickActive = false
+local anim = Instance.new("Animation")
+anim.AnimationId = "rbxassetid://110413869466904"
+local animTrack = nil
+
+-- Color Scheme - Background diubah jadi hitam doff
+local COLOR = {
+    PRIMARY = Color3.fromRGB(0, 150, 255),        -- Biru utama
+    SECONDARY = Color3.fromRGB(0, 120, 220),      -- Biru lebih terang
+    ACCENT = Color3.fromRGB(0, 200, 255),         -- Biru terang
+    BACKGROUND = Color3.fromRGB(5, 5, 8),         -- HITAM DOFF (dari 15,20,30)
+    CARD = Color3.fromRGB(10, 12, 18),            -- Kartu lebih gelap (dari 25,35,50)
+    CARD_LIGHT = Color3.fromRGB(15, 18, 25),      -- Kartu lebih terang (dari 35,45,65)
+    TEXT = Color3.fromRGB(220, 240, 255),         -- Teks biru muda lebih terang
+    TEXT_SECONDARY = Color3.fromRGB(180, 220, 255), -- Teks sekunder lebih terang
+    SUCCESS = Color3.fromRGB(0, 255, 150),        -- Hijau untuk ON
+    DANGER = Color3.fromRGB(255, 80, 80),         -- Merah untuk tombol close
+    WARNING = Color3.fromRGB(255, 180, 0)         -- Kuning untuk warning
+}
+
+-- Function to create border for buttons - DIKECILKAN dari 1.5 jadi 1
+local function addBorder(button, color)
+    local border = Instance.new("UIStroke", button)
+    border.Color = color or COLOR.PRIMARY
+    border.Thickness = 1  -- DIKECILKAN dari 1.5
+    border.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    return border
+end
+
+-- Function to create gradient effect
+local function addGradient(frame)
+    local gradient = Instance.new("UIGradient", frame)
+    gradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, COLOR.BACKGROUND),
+        ColorSequenceKeypoint.new(1, COLOR.ACCENT)
+    })
+    gradient.Rotation = 45
+    return gradient
+end
+
+-- Root GUI
+local gui = Instance.new("ScreenGui")
+gui.Name = "JSY_FISH"
+gui.ResetOnSpawn = false
+gui.Parent = coregui
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+-- MAIN PANEL - Background diubah jadi hitam doff - DIKECILKAN
+local PANEL_W, PANEL_H = 380, 280
+local main = Instance.new("Frame", gui)
+main.Name = "MainPanel"
+main.Size = UDim2.new(0, PANEL_W, 0, PANEL_H)
+main.Position = UDim2.new(0.5, -PANEL_W/2, 0.5, -PANEL_H/2)
+main.Active = true
+main.Draggable = false  -- Tidak bisa didrag
+main.BackgroundColor3 = COLOR.BACKGROUND  -- HITAM DOFF
+main.BorderSizePixel = 0
+local mainCorner = Instance.new("UICorner", main)
+mainCorner.CornerRadius = UDim.new(0, 10)  -- DIKECILKAN dari 12
+
+-- Neon border dengan gradient - BackgroundTransparency dikurangi agar lebih visible
+local border = Instance.new("Frame", main)
+border.Size = UDim2.new(1, 4, 1, 4)  -- DIKECILKAN dari 6
+border.Position = UDim2.new(0, -2, 0, -2)  -- DIKECILKAN dari -3
+border.BackgroundColor3 = COLOR.PRIMARY
+border.BackgroundTransparency = 0.2
+border.BorderSizePixel = 0
+border.ZIndex = 0
+local borderCorner = Instance.new("UICorner", border)
+borderCorner.CornerRadius = UDim.new(0, 12)  -- DIKECILKAN dari 14
+addGradient(border)
+
+-- Header dengan gradient - Background lebih gelap - DIKECILKAN
+local header = Instance.new("Frame", main)
+header.Size = UDim2.new(1, 0, 0, 40)  -- DIKECILKAN dari 52
+header.Position = UDim2.new(0,0,0,0)
+header.BackgroundTransparency = 0
+header.BackgroundColor3 = COLOR.CARD
+header.ZIndex = 2
+header.ClipsDescendants = true
+local headerCorner = Instance.new("UICorner", header)
+headerCorner.CornerRadius = UDim.new(0, 10)  -- DIKECILKAN dari 12
+local headerGradient = addGradient(header)
+
+-- Frame pembungkus untuk konten header agar tidak keluar dari rounded corners
+local headerContent = Instance.new("Frame", header)
+headerContent.Size = UDim2.new(1, 0, 1, 0)
+headerContent.Position = UDim2.new(0, 0, 0, 0)
+headerContent.BackgroundTransparency = 1
+headerContent.ClipsDescendants = true
+
+local title = Instance.new("TextLabel", headerContent)
+title.Size = UDim2.new(0.6, 0, 1, 0)
+title.Position = UDim2.new(0,10,0,0)  -- DIKECILKAN dari 12
+title.BackgroundTransparency = 1
+title.Text = "JSY FISH IT"
+title.Font = Enum.Font.GothamBold
+title.TextSize = 16  -- DIKECILKAN dari 18
+title.TextColor3 = COLOR.TEXT
+title.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Control buttons - DIKECILKAN
+local btnClose = Instance.new("TextButton", headerContent)
+btnClose.Size = UDim2.new(0,28,0,28)  -- DIKECILKAN dari 36
+btnClose.Position = UDim2.new(1, -36, 0, 6)  -- DIKECILKAN posisi
+btnClose.BackgroundColor3 = COLOR.DANGER
+btnClose.Text = "×"
+btnClose.Font = Enum.Font.GothamBold
+btnClose.TextSize = 16  -- DIKECILKAN dari 20
+btnClose.TextColor3 = Color3.fromRGB(255,255,255)
+btnClose.AutoButtonColor = false
+Instance.new("UICorner", btnClose).CornerRadius = UDim.new(0,6)  -- DIKECILKAN dari 8
+addBorder(btnClose, COLOR.DANGER)
+
+local btnMin = Instance.new("TextButton", headerContent)
+btnMin.Size = UDim2.new(0,28,0,28)  -- DIKECILKAN dari 36
+btnMin.Position = UDim2.new(1, -72, 0, 6)  -- DIKECILKAN posisi
+btnMin.BackgroundColor3 = COLOR.CARD_LIGHT
+btnMin.Text = "-"
+btnMin.Font = Enum.Font.GothamBold
+btnMin.TextSize = 14  -- DIKECILKAN dari 16
+btnMin.TextColor3 = COLOR.TEXT
+btnMin.AutoButtonColor = false
+Instance.new("UICorner", btnMin).CornerRadius = UDim.new(0,6)  -- DIKECILKAN dari 8
+addBorder(btnMin)
+
+-- Hover effects untuk control buttons
+btnClose.MouseEnter:Connect(function()
+    btnClose.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+end)
+btnClose.MouseLeave:Connect(function()
+    btnClose.BackgroundColor3 = COLOR.DANGER
+end)
+
+btnMin.MouseEnter:Connect(function()
+    btnMin.BackgroundColor3 = COLOR.PRIMARY
+end)
+btnMin.MouseLeave:Connect(function()
+    btnMin.BackgroundColor3 = COLOR.CARD_LIGHT
+end)
+
+-- Tabs dengan warna yang lebih gelap - DIKECILKAN
+local tabBar = Instance.new("Frame", main)
+tabBar.Size = UDim2.new(1, -20, 0, 32)  -- DIKECILKAN dari 42
+tabBar.Position = UDim2.new(0,10,0,50)  -- DIKECILKAN posisi
+tabBar.BackgroundTransparency = 1
+tabBar.ZIndex = 2
+
+local function makeTab(xIndex, label)
+    local t = Instance.new("TextButton", tabBar)
+    t.Size = UDim2.new(1/3, -8, 1, 0)  -- DIKECILKAN dari -10
+    t.Position = UDim2.new((xIndex-1)/3, (xIndex==1 and 0 or 6), 0, 0)  -- DIKECILKAN dari 8
+    t.Text = label
+    t.Font = Enum.Font.GothamBold
+    t.TextSize = 12  -- DIKECILKAN dari 14
+    t.BackgroundColor3 = COLOR.CARD_LIGHT
+    t.BorderSizePixel = 0
+    t.TextColor3 = COLOR.TEXT
+    t.AutoButtonColor = false
+    Instance.new("UICorner", t).CornerRadius = UDim.new(0,6)  -- DIKECILKAN dari 8
+    addBorder(t)
+    
+    -- Hover effect yang lebih terang
+    t.MouseEnter:Connect(function()
+        if t.BackgroundColor3 ~= COLOR.PRIMARY then
+            t.BackgroundColor3 = Color3.fromRGB(25, 35, 50)
+            t.TextColor3 = COLOR.TEXT
+        end
+    end)
+    
+    t.MouseLeave:Connect(function()
+        if t.BackgroundColor3 ~= COLOR.PRIMARY then
+            t.BackgroundColor3 = COLOR.CARD_LIGHT
+            t.TextColor3 = COLOR.TEXT
+        end
+    end)
+    
+    return t
+end
+
+local tabFishing = makeTab(1, "🎣 Fishing")
+local tabSetting = makeTab(2, "⚙️ Setting")
+local tabLokasi  = makeTab(3, "📍 Lokasi")
+
+-- Content area - DIKECILKAN
+local content = Instance.new("Frame", main)
+content.Size = UDim2.new(1, -20, 1, -100)  -- DIKECILKAN dari -132
+content.Position = UDim2.new(0,10,0,92)  -- DIKECILKAN dari 116
+content.BackgroundTransparency = 1
+content.ClipsDescendants = true
+content.ZIndex = 2
+
+local frameFishing = Instance.new("Frame", content); frameFishing.Size = UDim2.new(1,0,1,0); frameFishing.BackgroundTransparency = 1; frameFishing.ZIndex = 2
+local frameSetting = Instance.new("Frame", content); frameSetting.Size = UDim2.new(1,0,1,0); frameSetting.BackgroundTransparency = 1; frameSetting.Visible = false; frameSetting.ZIndex = 2
+local frameLokasi  = Instance.new("Frame", content); frameLokasi.Size = UDim2.new(1,0,1,0); frameLokasi.BackgroundTransparency = 1; frameLokasi.Visible = false; frameLokasi.ZIndex = 2
+
+-- Columns in fishing
+local leftW = 0.62
+local rightW = 1 - leftW - 0.02
+
+local leftCol = Instance.new("Frame", frameFishing)
+leftCol.Size = UDim2.new(leftW, 0, 1, 0)
+leftCol.Position = UDim2.new(0,0,0,0)
+leftCol.BackgroundTransparency = 1
+leftCol.ZIndex = 2
+local rightCol = Instance.new("Frame", frameFishing)
+rightCol.Size = UDim2.new(rightW, 0, 1, 0)
+rightCol.Position = UDim2.new(leftW + 0.02, 0, 0, 0)
+rightCol.BackgroundTransparency = 1
+rightCol.ZIndex = 2
+
+-- Toggle builder (ON/OFF on right side) - DIKECILKAN
+local toggleY = 0
+local function addToggle(parent, labelText)
+    local h = 38  -- DIKECILKAN dari 50
+    local f = Instance.new("Frame", parent)
+    f.Size = UDim2.new(1, 0, 0, h)
+    f.Position = UDim2.new(0, 0, 0, toggleY)
+    f.BackgroundTransparency = 1
+    f.ZIndex = 2
+
+    local lbl = Instance.new("TextLabel", f)
+    lbl.Size = UDim2.new(0.7, 0, 1, 0)
+    lbl.Position = UDim2.new(0, 8, 0, 0)  -- DIKECILKAN dari 12
+    lbl.BackgroundTransparency = 1
+    lbl.Font = Enum.Font.GothamBold
+    lbl.TextSize = 12  -- DIKECILKAN dari 14
+    lbl.Text = labelText
+    lbl.TextColor3 = COLOR.TEXT
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.ZIndex = 2
+
+    local btn = Instance.new("TextButton", f)
+    btn.Size = UDim2.new(0, 60, 0, 26)  -- DIKECILKAN dari 78,34
+    btn.Position = UDim2.new(1, 60, 0.5, -13)  -- DIKECILKAN posisi
+    btn.BackgroundColor3 = COLOR.CARD_LIGHT
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 11  -- DIKECILKAN dari 13
+    btn.Text = "OFF"
+    btn.TextColor3 = COLOR.TEXT
+    btn.BorderSizePixel = 0
+    btn.AutoButtonColor = false
+    btn.ZIndex = 2
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0,8)  -- DIKECILKAN dari 10
+    addBorder(btn)
+    
+    -- Hover effect untuk toggle buttons
+    btn.MouseEnter:Connect(function()
+        if btn.Text == "OFF" then
+            btn.BackgroundColor3 = Color3.fromRGB(30, 45, 65)
+            btn.TextColor3 = COLOR.TEXT
+        end
+    end)
+    
+    btn.MouseLeave:Connect(function()
+        if btn.Text == "OFF" then
+            btn.BackgroundColor3 = COLOR.CARD_LIGHT
+            btn.TextColor3 = COLOR.TEXT
+        end
+    end)
+
+    toggleY = toggleY + h + 6  -- DIKECILKAN dari 8
+    return f, btn, lbl
+end
+
+local frameFreeze, btnFreeze = addToggle(leftCol, "Freeze")
+local frameAutoClick, btnAutoClick = addToggle(leftCol, "Auto Click")
+local frameRadar, btnRadar = addToggle(leftCol, "Radar")
+
+-- Setting tab layout (sell button + weather button) - DIKECILKAN
+local settingTop = Instance.new("Frame", frameSetting)
+settingTop.Size = UDim2.new(1,0,0,110)  -- DIKECILKAN dari 140
+settingTop.Position = UDim2.new(0,0,0,6)
+settingTop.BackgroundTransparency = 1
+settingTop.ZIndex = 2
+
+local labelSetting = Instance.new("TextLabel", settingTop)
+labelSetting.Size = UDim2.new(1, -12, 0, 20)  -- DIKECILKAN dari 24
+labelSetting.Position = UDim2.new(0, 6, 0, 0)
+labelSetting.BackgroundTransparency = 1
+labelSetting.Text = "⚙️ SETTINGS"
+labelSetting.Font = Enum.Font.GothamBold
+labelSetting.TextSize = 14  -- DIKECILKAN dari 16
+labelSetting.TextColor3 = COLOR.TEXT
+labelSetting.TextXAlignment = Enum.TextXAlignment.Left
+labelSetting.ZIndex = 2
+
+-- Sell All in settings - DIKECILKAN
+local sellAllBtn = Instance.new("TextButton", frameSetting)
+sellAllBtn.Size = UDim2.new(1, -20, 0, 36)  -- DIKECILKAN dari 44
+sellAllBtn.Position = UDim2.new(0, 10, 0, 30)  -- DIKECILKAN posisi
+sellAllBtn.BackgroundColor3 = COLOR.SUCCESS
+sellAllBtn.Font = Enum.Font.GothamBold
+sellAllBtn.Text = "💰 SELL ALL FISH"
+sellAllBtn.TextSize = 12  -- DIKECILKAN dari 14
+sellAllBtn.TextColor3 = Color3.fromRGB(20,20,20)
+sellAllBtn.BorderSizePixel = 0
+sellAllBtn.AutoButtonColor = false
+sellAllBtn.ZIndex = 2
+Instance.new("UICorner", sellAllBtn).CornerRadius = UDim.new(0,8)  -- DIKECILKAN dari 10
+addBorder(sellAllBtn, COLOR.SUCCESS)
+
+-- Hover effect untuk sell button
+sellAllBtn.MouseEnter:Connect(function()
+    sellAllBtn.BackgroundColor3 = Color3.fromRGB(0, 230, 130)
+end)
+sellAllBtn.MouseLeave:Connect(function()
+    sellAllBtn.BackgroundColor3 = COLOR.SUCCESS
+end)
+
+-- Lokasi (teleports) - DIKECILKAN
+local lokasiScroll = Instance.new("ScrollingFrame", frameLokasi)
+lokasiScroll.Size = UDim2.new(1, -10, 1, -10)  -- DIKECILKAN dari -12
+lokasiScroll.Position = UDim2.new(0, 5, 0, 5)  -- DIKECILKAN dari 6
+lokasiScroll.BackgroundTransparency = 1
+lokasiScroll.BorderSizePixel = 0
+lokasiScroll.CanvasSize = UDim2.new(0,0,0,10)
+lokasiScroll.ScrollBarThickness = 5  -- DIKECILKAN dari 6
+lokasiScroll.ZIndex = 2
+
+local locLayout = Instance.new("UIListLayout", lokasiScroll)
+locLayout.Padding = UDim.new(0,5)  -- DIKECILKAN dari 6
+locLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+local teleports = {
+    {name="🏝️ Fisherman Island", pos=Vector3.new(57.79, 17.03, 2837.21)},
+    {name="🌸 Kohana", pos=Vector3.new(-659.68, 17.25, 447.27)},
+    {name="🌋 Kohana Volkano", pos=Vector3.new(-631.64, 56.52, 204.75)},
+    {name="🐠 Coral Reefs", pos=Vector3.new(-3142.84, 3.37, 2130.26)},
+    {name="🌊 Esoteric Depths", pos=Vector3.new(3256.75, -1300.66, 1393.43)},
+    {name="🌴 Tropical Grove", pos=Vector3.new(-2064.34, 6.26, 3655.67)},
+    {name="💫 Crater Island", pos=Vector3.new(1010.25, 22.27, 5080.05)},
+    {name="💎 Treasure Room", pos=Vector3.new(-3598.42, -279.73, -1633.82)},
+    {name="🗿 Sisyphus Statue", pos=Vector3.new(-3698.62, -135.58, -1022.3)},
+    {name="🌿 Ancient Jungle", pos=Vector3.new(1274.1, 7.85, -196.86)},
+    {name="🐛 underground ", pos=Vector3.new(2097.69, -91.2, -702.12)},
+}
+
+for _, info in ipairs(teleports) do
+    local b = Instance.new("TextButton", lokasiScroll)
+    b.Size = UDim2.new(1, -16, 0, 36)  -- DIKECILKAN dari 44
+    b.BackgroundColor3 = COLOR.CARD_LIGHT
+    b.BorderSizePixel = 0
+    b.Font = Enum.Font.GothamBold
+    b.TextSize = 12  -- DIKECILKAN dari 14
+    b.Text = info.name
+    b.TextColor3 = COLOR.TEXT
+    b.AutoButtonColor = false
+    b.ZIndex = 2
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0,6)  -- DIKECILKAN dari 8
+    addBorder(b)
+    
+    -- Hover effect untuk teleport buttons
+    b.MouseEnter:Connect(function()
+        b.BackgroundColor3 = COLOR.PRIMARY
+        b.TextColor3 = Color3.fromRGB(255,255,255)
+    end)
+    
+    b.MouseLeave:Connect(function()
+        b.BackgroundColor3 = COLOR.CARD_LIGHT
+        b.TextColor3 = COLOR.TEXT
+    end)
+    
+    b.MouseButton1Click:Connect(function()
+        local char = player.Character or player.CharacterAdded:Wait()
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            char:MoveTo(info.pos)
+        end
+    end)
+end
+
+locLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    lokasiScroll.CanvasSize = UDim2.new(0,0,0, locLayout.AbsoluteContentSize.Y + 10)  -- DIKECILKAN dari 12
+end)
+
+-- Tab switching dengan efek warna yang lebih baik
+local function setActiveTab(tab)
+    -- Reset semua tab ke warna normal
+    for _, tabBtn in ipairs({tabFishing, tabSetting, tabLokasi}) do
+        tabBtn.BackgroundColor3 = COLOR.CARD_LIGHT
+        tabBtn.TextColor3 = COLOR.TEXT
+        -- Hapus gradient dari tab tidak aktif
+        for _, child in ipairs(tabBtn:GetChildren()) do
+            if child:IsA("UIGradient") then
+                child:Destroy()
+            end
+        end
+    end
+    
+    -- Set tab aktif ke warna primary dengan gradient
+    if tab == "Fishing" then
+        frameFishing.Visible = true; frameSetting.Visible = false; frameLokasi.Visible = false
+        tabFishing.BackgroundColor3 = COLOR.PRIMARY
+        tabFishing.TextColor3 = Color3.fromRGB(255,255,255)
+        addGradient(tabFishing)
+    elseif tab == "Setting" then
+        frameFishing.Visible = false; frameSetting.Visible = true; frameLokasi.Visible = false
+        tabSetting.BackgroundColor3 = COLOR.PRIMARY
+        tabSetting.TextColor3 = Color3.fromRGB(255,255,255)
+        addGradient(tabSetting)
+    else
+        frameFishing.Visible = false; frameSetting.Visible = false; frameLokasi.Visible = true
+        tabLokasi.BackgroundColor3 = COLOR.PRIMARY
+        tabLokasi.TextColor3 = Color3.fromRGB(255,255,255)
+        addGradient(tabLokasi)
+    end
+end
+
+tabFishing.MouseButton1Click:Connect(function() setActiveTab("Fishing") end)
+tabSetting.MouseButton1Click:Connect(function() setActiveTab("Setting") end)
+tabLokasi.MouseButton1Click:Connect(function() setActiveTab("Lokasi") end)
+
+-- Minimize / floating (left-bottom) - TETAP SAMA UKURANNYA DAN TIDAK BISA DIDRAG
+local floatGui = Instance.new("ScreenGui")
+floatGui.Name = "JSY_FISH"
+floatGui.ResetOnSpawn = false
+floatGui.Parent = coregui
+floatGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+local floatBtn = Instance.new("ImageButton", floatGui)
+floatBtn.Size = UDim2.new(0, 45, 0, 45)  -- TETAP SAMA
+floatBtn.Position = UDim2.new(0, 12, 0, 12)  -- Posisi di kiri atas
+floatBtn.AnchorPoint = Vector2.new(0, 0)  -- Anchor point ke kiri atas
+floatBtn.BorderSizePixel = 0
+floatBtn.Image = "rbxassetid://86295158918012"
+floatBtn.ScaleType = Enum.ScaleType.Fit
+floatBtn.Active = true
+floatBtn.Draggable = false  -- DIUBAH: Tidak bisa didrag
+Instance.new("UICorner", floatBtn).CornerRadius = UDim.new(0, 12)
+addBorder(floatBtn)
+floatGui.Enabled = false
+
+-- Hover effect untuk float button
+floatBtn.MouseEnter:Connect(function()
+    local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    local tween = TweenService:Create(floatBtn, tweenInfo, {Size = UDim2.new(0, 62, 0, 62)})
+    tween:Play()
+end)
+
+floatBtn.MouseLeave:Connect(function()
+    local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    local tween = TweenService:Create(floatBtn, tweenInfo, {Size = UDim2.new(0, 45, 0, 45)})
+    tween:Play()
+end)
+
+btnMin.MouseButton1Click:Connect(function()
+    main.Visible = false
+    floatGui.Enabled = true
+end)
+
+floatBtn.MouseButton1Click:Connect(function()
+    main.Visible = true
+    floatGui.Enabled = false
+end)
+
+btnClose.MouseButton1Click:Connect(function()
+    gui:Destroy()
+    floatGui:Destroy()
+end)
+
+-- ---------- Features logic ----------
+
+-- Anim helpers
+local function playFishingAnimation()
+    local humanoid = player.Character and player.Character:FindFirstChildOfClass("Humanoid")
+    if humanoid and running then
+        if animTrack then animTrack:Stop(); animTrack:Destroy(); animTrack = nil end
+        animTrack = humanoid:LoadAnimation(anim)
+        if animTrack then animTrack:Play() end
+    end
+end
+local function stopFishingAnimation()
+    if animTrack then animTrack:Stop(); animTrack:Destroy(); animTrack = nil end
+end
+
+-- Freeze toggle
+btnFreeze.MouseButton1Click:Connect(function()
+    if not player.Character then return end
+    frozen = not frozen
+    if frozen then
+        btnFreeze.Text = "ON"
+        btnFreeze.BackgroundColor3 = COLOR.SUCCESS
+        btnFreeze.TextColor3 = Color3.fromRGB(20,20,20)
+        local root = player.Character:WaitForChild("HumanoidRootPart")
+        freezePos = root.CFrame
+        if freezeConnection then freezeConnection:Disconnect(); freezeConnection = nil end
+        freezeConnection = RunService.Heartbeat:Connect(function()
+            local char = player.Character
+            if char and char.Parent then
+                local hrp = char:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    hrp.AssemblyLinearVelocity = Vector3.zero
+                    hrp.AssemblyAngularVelocity = Vector3.zero
+                    if (hrp.Position - freezePos.Position).Magnitude > 0.1 then
+                        hrp.CFrame = freezePos
+                    end
+                end
+            else
+                if freezeConnection then freezeConnection:Disconnect(); freezeConnection = nil end
+            end
+        end)
+    else
+        btnFreeze.Text = "OFF"
+        btnFreeze.BackgroundColor3 = COLOR.CARD_LIGHT
+        btnFreeze.TextColor3 = COLOR.TEXT
+        if freezeConnection then freezeConnection:Disconnect(); freezeConnection = nil end
+    end
+end)
+
+-- Auto Click System
+local autoTap = false
+local tapSpeed = 0.01 -- super cepat
+
+-- Area tap (posisi tetap, sedikit lebih kanan & bawah)
+local TapArea = Instance.new("Frame", gui)
+TapArea.Size = UDim2.new(0, 40, 0, 40)
+TapArea.Position = UDim2.new(0, 20, 0, 20) -- geser kanan & bawah sedikit
+TapArea.BackgroundTransparency = 1
+TapArea.Active = true
+TapArea.Draggable = false
+
+-- Fungsi tap di tengah area
+local function tapAtArea()
+    local absPos = TapArea.AbsolutePosition
+    local absSize = TapArea.AbsoluteSize
+    local tapX = absPos.X + (absSize.X / 2)
+    local tapY = absPos.Y + (absSize.Y / 2)
+
+    VirtualInputManager:SendMouseButtonEvent(tapX, tapY, 0, true, game, 1)
+    task.wait()
+    VirtualInputManager:SendMouseButtonEvent(tapX, tapY, 0, false, game, 1)
+end
+
+-- Loop auto tap
+task.spawn(function()
+    while task.wait(tapSpeed) do
+        if autoTap then
+            pcall(tapAtArea)
+        end
+    end
+end)
+
+-- Auto Click toggle
+btnAutoClick.MouseButton1Click:Connect(function()
+    if not player.Character then return end
+    autoTap = not autoTap
+    if autoTap then
+        btnAutoClick.Text = "ON"
+        btnAutoClick.BackgroundColor3 = COLOR.SUCCESS
+        btnAutoClick.TextColor3 = Color3.fromRGB(20,20,20)
+    else
+        btnAutoClick.Text = "OFF"
+        btnAutoClick.BackgroundColor3 = COLOR.CARD_LIGHT
+        btnAutoClick.TextColor3 = COLOR.TEXT
+    end
+end)
+
+-- Radar toggle
+btnRadar.MouseButton1Click:Connect(function()
+    if not player.Character then return end
+    radarActive = not radarActive
+    if radarActive then
+        btnRadar.Text = "ON"
+        btnRadar.BackgroundColor3 = COLOR.SUCCESS
+        btnRadar.TextColor3 = Color3.fromRGB(20,20,20)
+        if UpdateFishingRadar then pcall(function() UpdateFishingRadar:InvokeServer(true) end) end
+    else
+        btnRadar.Text = "OFF"
+        btnRadar.BackgroundColor3 = COLOR.CARD_LIGHT
+        btnRadar.TextColor3 = COLOR.TEXT
+        if UpdateFishingRadar then pcall(function() UpdateFishingRadar:InvokeServer(false) end) end
+    end
+end)
+
+-- 🌦️ BUY WEATHER BUTTON (mirip tombol Sell All) - DIKECILKAN
+local RFPurchaseWeatherEvent = getRemote("RF/PurchaseWeatherEvent")
+local weatherActive = false
+
+local buyWeatherBtn = Instance.new("TextButton", frameSetting)
+buyWeatherBtn.Size = UDim2.new(1, -20, 0, 36)  -- DIKECILKAN dari 44
+buyWeatherBtn.Position = UDim2.new(0, 10, 0, 76)  -- DIKECILKAN posisi
+buyWeatherBtn.BackgroundColor3 = COLOR.CARD_LIGHT
+buyWeatherBtn.Font = Enum.Font.GothamBold
+buyWeatherBtn.Text = "🌦️AUTO BUY WEATHER : OFF"
+buyWeatherBtn.TextSize = 12  -- DIKECILKAN dari 14
+buyWeatherBtn.TextColor3 = COLOR.TEXT
+buyWeatherBtn.BorderSizePixel = 0
+buyWeatherBtn.AutoButtonColor = false
+buyWeatherBtn.ZIndex = 2
+Instance.new("UICorner", buyWeatherBtn).CornerRadius = UDim.new(0,8)  -- DIKECILKAN dari 10
+addBorder(buyWeatherBtn, COLOR.PRIMARY)
+
+-- Hover effect sama seperti Sell All
+buyWeatherBtn.MouseEnter:Connect(function()
+    if not weatherActive then
+        buyWeatherBtn.BackgroundColor3 = Color3.fromRGB(30, 45, 65)
+    end
+end)
+buyWeatherBtn.MouseLeave:Connect(function()
+    if not weatherActive then
+        buyWeatherBtn.BackgroundColor3 = COLOR.CARD_LIGHT
+    end
+end)
+
+-- Fungsi pembelian cuaca
+local function purchaseWeather()
+    if not RFPurchaseWeatherEvent then return end
+    local weathers = {"Wind", "Snow", "Storm"}
+    for _, w in ipairs(weathers) do
+        pcall(function()
+            RFPurchaseWeatherEvent:InvokeServer(w)
+        end)
+        task.wait(0.6)
+    end
+end
+
+-- Loop untuk pembelian berulang selama ON
+task.spawn(function()
+    while true do
+        if weatherActive then
+            purchaseWeather()
+        end
+        task.wait(3) -- interval pembelian (ubah sesuai keinginan)
+    end
+end)
+
+-- Toggle ON/OFF tombol
+buyWeatherBtn.MouseButton1Click:Connect(function()
+    weatherActive = not weatherActive
+    if weatherActive then
+        buyWeatherBtn.Text = "🌦️AUTO BUY WEATHER : ON"
+        buyWeatherBtn.BackgroundColor3 = COLOR.SUCCESS
+        buyWeatherBtn.TextColor3 = Color3.fromRGB(20,20,20)
+        addBorder(buyWeatherBtn, COLOR.SUCCESS)
+    else
+        buyWeatherBtn.Text = "🌦️AUTO BUY WEATHER : OFF"
+        buyWeatherBtn.BackgroundColor3 = COLOR.CARD_LIGHT
+        buyWeatherBtn.TextColor3 = COLOR.TEXT
+        addBorder(buyWeatherBtn, COLOR.PRIMARY)
+    end
+end)
+
+-- Sell All logic
+sellAllBtn.MouseButton1Click:Connect(function()
+    safeInvoke(SellAllItems)
+end)
+
+-- Set default tab
+setActiveTab("Fishing")
