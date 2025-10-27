@@ -1,0 +1,864 @@
+local Players = game:GetService("Players")
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+local VirtualInputManager = game:GetService("VirtualInputManager")
+local player = Players.LocalPlayer
+local coregui = game:GetService("CoreGui")
+
+-- Clean previous GUIs
+for _, name in ipairs({"JSY_FISH", "JSY_FISH"}) do
+    local g = coregui:FindFirstChild(name)
+    if g then g:Destroy() end
+end
+
+-- Remote helper (graceful if missing)
+local function findNet()
+    local ok, net = pcall(function()
+        return ReplicatedStorage:WaitForChild("Packages"):WaitForChild("_Index"):WaitForChild("sleitnick_net@0.2.0"):WaitForChild("net")
+    end)
+    if ok then return net end
+    return nil
+end
+local net = findNet()
+
+local function getRemote(name)
+    if typeof(net) == "Instance" then
+        return net:FindFirstChild(name)
+    end
+    return nil
+end
+
+local UpdateFishingRadar = getRemote("RF/UpdateFishingRadar")
+local SellAllItems = getRemote("RF/SellAllItems")
+
+local function safeInvoke(remote, args)
+    if not remote then return false end
+    local ok, res = pcall(function() return remote:InvokeServer(unpack(args or {})) end)
+    return ok, res
+end
+
+-- States
+local running = false
+local frozen = false
+local freezePos = nil
+local freezeConnection = nil
+local radarActive = false
+local autoTap = false
+local settingPosition = false
+local tapPosition = Vector2.new(100, 100)
+local protectingGUI = false
+
+-- Color Scheme
+local COLOR = {
+    PRIMARY = Color3.fromRGB(0, 150, 255),
+    SECONDARY = Color3.fromRGB(0, 120, 220),
+    ACCENT = Color3.fromRGB(0, 200, 255),
+    BACKGROUND = Color3.fromRGB(5, 5, 8),
+    CARD = Color3.fromRGB(10, 12, 18),
+    CARD_LIGHT = Color3.fromRGB(15, 18, 25),
+    TEXT = Color3.fromRGB(220, 240, 255),
+    TEXT_SECONDARY = Color3.fromRGB(180, 220, 255),
+    SUCCESS = Color3.fromRGB(0, 255, 150),
+    DANGER = Color3.fromRGB(255, 80, 80),
+    WARNING = Color3.fromRGB(255, 180, 0)
+}
+
+-- Function to create border for buttons
+local function addBorder(button, color)
+    local border = Instance.new("UIStroke", button)
+    border.Color = color or COLOR.PRIMARY
+    border.Thickness = 1
+    border.ApplyStrokeMode = Enum.ApplyStrokeMode.Border
+    return border
+end
+
+-- Function to create gradient effect
+local function addGradient(frame)
+    local gradient = Instance.new("UIGradient", frame)
+    gradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, COLOR.BACKGROUND),
+        ColorSequenceKeypoint.new(1, COLOR.ACCENT)
+    })
+    gradient.Rotation = 45
+    return gradient
+end
+
+-- Root GUI
+local gui = Instance.new("ScreenGui")
+gui.Name = "JSY_FISH"
+gui.ResetOnSpawn = false
+gui.Parent = coregui
+gui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+-- MAIN PANEL
+local PANEL_W, PANEL_H = 380, 280
+local main = Instance.new("Frame", gui)
+main.Name = "MainPanel"
+main.Size = UDim2.new(0, PANEL_W, 0, PANEL_H)
+main.Position = UDim2.new(0.5, -PANEL_W/2, 0.5, -PANEL_H/2)
+main.Active = true
+main.Draggable = false
+main.BackgroundColor3 = COLOR.BACKGROUND
+main.BorderSizePixel = 0
+local mainCorner = Instance.new("UICorner", main)
+mainCorner.CornerRadius = UDim.new(0, 10)
+
+-- Neon border dengan gradient
+local border = Instance.new("Frame", main)
+border.Size = UDim2.new(1, 4, 1, 4)
+border.Position = UDim2.new(0, -2, 0, -2)
+border.BackgroundColor3 = COLOR.PRIMARY
+border.BackgroundTransparency = 0.2
+border.BorderSizePixel = 0
+border.ZIndex = 0
+local borderCorner = Instance.new("UICorner", border)
+borderCorner.CornerRadius = UDim.new(0, 12)
+addGradient(border)
+
+-- Header dengan gradient
+local header = Instance.new("Frame", main)
+header.Size = UDim2.new(1, 0, 0, 40)
+header.Position = UDim2.new(0,0,0,0)
+header.BackgroundTransparency = 0
+header.BackgroundColor3 = COLOR.CARD
+header.ZIndex = 2
+header.ClipsDescendants = true
+local headerCorner = Instance.new("UICorner", header)
+headerCorner.CornerRadius = UDim.new(0, 10)
+local headerGradient = addGradient(header)
+
+-- Frame pembungkus untuk konten header
+local headerContent = Instance.new("Frame", header)
+headerContent.Size = UDim2.new(1, 0, 1, 0)
+headerContent.Position = UDim2.new(0, 0, 0, 0)
+headerContent.BackgroundTransparency = 1
+headerContent.ClipsDescendants = true
+
+local title = Instance.new("TextLabel", headerContent)
+title.Size = UDim2.new(0.6, 0, 1, 0)
+title.Position = UDim2.new(0,10,0,0)
+title.BackgroundTransparency = 1
+title.Text = "JSY FISH IT"
+title.Font = Enum.Font.GothamBold
+title.TextSize = 16
+title.TextColor3 = COLOR.TEXT
+title.TextXAlignment = Enum.TextXAlignment.Left
+
+-- Control buttons
+local btnClose = Instance.new("TextButton", headerContent)
+btnClose.Size = UDim2.new(0,28,0,28)
+btnClose.Position = UDim2.new(1, -36, 0, 6)
+btnClose.BackgroundColor3 = COLOR.DANGER
+btnClose.Text = "×"
+btnClose.Font = Enum.Font.GothamBold
+btnClose.TextSize = 16
+btnClose.TextColor3 = Color3.fromRGB(255,255,255)
+btnClose.AutoButtonColor = false
+Instance.new("UICorner", btnClose).CornerRadius = UDim.new(0,6)
+addBorder(btnClose, COLOR.DANGER)
+
+local btnMin = Instance.new("TextButton", headerContent)
+btnMin.Size = UDim2.new(0,28,0,28)
+btnMin.Position = UDim2.new(1, -72, 0, 6)
+btnMin.BackgroundColor3 = COLOR.CARD_LIGHT
+btnMin.Text = "-"
+btnMin.Font = Enum.Font.GothamBold
+btnMin.TextSize = 14
+btnMin.TextColor3 = COLOR.TEXT
+btnMin.AutoButtonColor = false
+Instance.new("UICorner", btnMin).CornerRadius = UDim.new(0,6)
+addBorder(btnMin)
+
+-- Hover effects untuk control buttons
+btnClose.MouseEnter:Connect(function()
+    btnClose.BackgroundColor3 = Color3.fromRGB(255, 100, 100)
+end)
+btnClose.MouseLeave:Connect(function()
+    btnClose.BackgroundColor3 = COLOR.DANGER
+end)
+
+btnMin.MouseEnter:Connect(function()
+    btnMin.BackgroundColor3 = COLOR.PRIMARY
+end)
+btnMin.MouseLeave:Connect(function()
+    btnMin.BackgroundColor3 = COLOR.CARD_LIGHT
+end)
+
+-- Tabs
+local tabBar = Instance.new("Frame", main)
+tabBar.Size = UDim2.new(1, -20, 0, 32)
+tabBar.Position = UDim2.new(0,10,0,50)
+tabBar.BackgroundTransparency = 1
+tabBar.ZIndex = 2
+
+local function makeTab(xIndex, label)
+    local t = Instance.new("TextButton", tabBar)
+    t.Size = UDim2.new(1/3, -8, 1, 0)
+    t.Position = UDim2.new((xIndex-1)/3, (xIndex==1 and 0 or 6), 0, 0)
+    t.Text = label
+    t.Font = Enum.Font.GothamBold
+    t.TextSize = 12
+    t.BackgroundColor3 = COLOR.CARD_LIGHT
+    t.BorderSizePixel = 0
+    t.TextColor3 = COLOR.TEXT
+    t.AutoButtonColor = false
+    Instance.new("UICorner", t).CornerRadius = UDim.new(0,6)
+    addBorder(t)
+    
+    t.MouseEnter:Connect(function()
+        if t.BackgroundColor3 ~= COLOR.PRIMARY then
+            t.BackgroundColor3 = Color3.fromRGB(25, 35, 50)
+            t.TextColor3 = COLOR.TEXT
+        end
+    end)
+    
+    t.MouseLeave:Connect(function()
+        if t.BackgroundColor3 ~= COLOR.PRIMARY then
+            t.BackgroundColor3 = COLOR.CARD_LIGHT
+            t.TextColor3 = COLOR.TEXT
+        end
+    end)
+    
+    return t
+end
+
+local tabFishing = makeTab(1, "🎣 Fishing")
+local tabSetting = makeTab(2, "⚙️ Setting")
+local tabLokasi  = makeTab(3, "📍 Lokasi")
+
+-- Content area
+local content = Instance.new("Frame", main)
+content.Size = UDim2.new(1, -20, 1, -100)
+content.Position = UDim2.new(0,10,0,92)
+content.BackgroundTransparency = 1
+content.ClipsDescendants = true
+content.ZIndex = 2
+
+local frameFishing = Instance.new("Frame", content); frameFishing.Size = UDim2.new(1,0,1,0); frameFishing.BackgroundTransparency = 1; frameFishing.ZIndex = 2
+local frameSetting = Instance.new("Frame", content); frameSetting.Size = UDim2.new(1,0,1,0); frameSetting.BackgroundTransparency = 1; frameSetting.Visible = false; frameSetting.ZIndex = 2
+local frameLokasi  = Instance.new("Frame", content); frameLokasi.Size = UDim2.new(1,0,1,0); frameLokasi.BackgroundTransparency = 1; frameLokasi.Visible = false; frameLokasi.ZIndex = 2
+
+-- Columns in fishing
+local leftW = 0.62
+local rightW = 1 - leftW - 0.02
+
+local leftCol = Instance.new("Frame", frameFishing)
+leftCol.Size = UDim2.new(leftW, 0, 1, 0)
+leftCol.Position = UDim2.new(0,0,0,0)
+leftCol.BackgroundTransparency = 1
+leftCol.ZIndex = 2
+local rightCol = Instance.new("Frame", frameFishing)
+rightCol.Size = UDim2.new(rightW, 0, 1, 0)
+rightCol.Position = UDim2.new(leftW + 0.02, 0, 0, 0)
+rightCol.BackgroundTransparency = 1
+rightCol.ZIndex = 2
+
+-- Toggle builder
+local toggleY = 0
+local function addToggle(parent, labelText)
+    local h = 38
+    local f = Instance.new("Frame", parent)
+    f.Size = UDim2.new(1, 0, 0, h)
+    f.Position = UDim2.new(0, 0, 0, toggleY)
+    f.BackgroundTransparency = 1
+    f.ZIndex = 2
+
+    local lbl = Instance.new("TextLabel", f)
+    lbl.Size = UDim2.new(0.7, 0, 1, 0)
+    lbl.Position = UDim2.new(0, 8, 0, 0)
+    lbl.BackgroundTransparency = 1
+    lbl.Font = Enum.Font.GothamBold
+    lbl.TextSize = 12
+    lbl.Text = labelText
+    lbl.TextColor3 = COLOR.TEXT
+    lbl.TextXAlignment = Enum.TextXAlignment.Left
+    lbl.ZIndex = 2
+
+    local btn = Instance.new("TextButton", f)
+    btn.Size = UDim2.new(0, 60, 0, 26)
+    btn.Position = UDim2.new(1, 60, 0.5, -13)
+    btn.BackgroundColor3 = COLOR.CARD_LIGHT
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 11
+    btn.Text = "OFF"
+    btn.TextColor3 = COLOR.TEXT
+    btn.BorderSizePixel = 0
+    btn.AutoButtonColor = false
+    btn.ZIndex = 2
+    Instance.new("UICorner", btn).CornerRadius = UDim.new(0,8)
+    addBorder(btn)
+    
+    btn.MouseEnter:Connect(function()
+        if btn.Text == "OFF" then
+            btn.BackgroundColor3 = Color3.fromRGB(30, 45, 65)
+            btn.TextColor3 = COLOR.TEXT
+        end
+    end)
+    
+    btn.MouseLeave:Connect(function()
+        if btn.Text == "OFF" then
+            btn.BackgroundColor3 = COLOR.CARD_LIGHT
+            btn.TextColor3 = COLOR.TEXT
+        end
+    end)
+
+    toggleY = toggleY + h + 6
+    return f, btn, lbl
+end
+
+local frameFreeze, btnFreeze = addToggle(leftCol, "Freeze")
+local frameSetPos, btnSetPos = addToggle(leftCol, "Atur Posisi Click")
+local frameAutoClick, btnAutoClick = addToggle(leftCol, "Auto Clicker")
+local frameRadar, btnRadar = addToggle(leftCol, "Radar")
+
+-- Setting tab layout
+local settingTop = Instance.new("Frame", frameSetting)
+settingTop.Size = UDim2.new(1,0,0,110)
+settingTop.Position = UDim2.new(0,0,0,6)
+settingTop.BackgroundTransparency = 1
+settingTop.ZIndex = 2
+
+local labelSetting = Instance.new("TextLabel", settingTop)
+labelSetting.Size = UDim2.new(1, -12, 0, 20)
+labelSetting.Position = UDim2.new(0, 6, 0, 0)
+labelSetting.BackgroundTransparency = 1
+labelSetting.Text = "⚙️ SETTINGS"
+labelSetting.Font = Enum.Font.GothamBold
+labelSetting.TextSize = 14
+labelSetting.TextColor3 = COLOR.TEXT
+labelSetting.TextXAlignment = Enum.TextXAlignment.Left
+labelSetting.ZIndex = 2
+
+-- Sell All in settings
+local sellAllBtn = Instance.new("TextButton", frameSetting)
+sellAllBtn.Size = UDim2.new(1, -20, 0, 36)
+sellAllBtn.Position = UDim2.new(0, 10, 0, 30)
+sellAllBtn.BackgroundColor3 = COLOR.SUCCESS
+sellAllBtn.Font = Enum.Font.GothamBold
+sellAllBtn.Text = "💰 SELL ALL FISH"
+sellAllBtn.TextSize = 12
+sellAllBtn.TextColor3 = Color3.fromRGB(20,20,20)
+sellAllBtn.BorderSizePixel = 0
+sellAllBtn.AutoButtonColor = false
+sellAllBtn.ZIndex = 2
+Instance.new("UICorner", sellAllBtn).CornerRadius = UDim.new(0,8)
+addBorder(sellAllBtn, COLOR.SUCCESS)
+
+sellAllBtn.MouseEnter:Connect(function()
+    sellAllBtn.BackgroundColor3 = Color3.fromRGB(0, 230, 130)
+end)
+sellAllBtn.MouseLeave:Connect(function()
+    sellAllBtn.BackgroundColor3 = COLOR.SUCCESS
+end)
+
+-- Lokasi (teleports)
+local lokasiScroll = Instance.new("ScrollingFrame", frameLokasi)
+lokasiScroll.Size = UDim2.new(1, -10, 1, -10)
+lokasiScroll.Position = UDim2.new(0, 5, 0, 5)
+lokasiScroll.BackgroundTransparency = 1
+lokasiScroll.BorderSizePixel = 0
+lokasiScroll.CanvasSize = UDim2.new(0,0,0,10)
+lokasiScroll.ScrollBarThickness = 5
+lokasiScroll.ZIndex = 2
+
+local locLayout = Instance.new("UIListLayout", lokasiScroll)
+locLayout.Padding = UDim.new(0,5)
+locLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+
+local teleports = {
+    {name="🏝️ Fisherman Island", pos=Vector3.new(57.79, 17.03, 2837.21)},
+    {name="🌸 Kohana", pos=Vector3.new(-659.68, 17.25, 447.27)},
+    {name="🌋 Kohana Volkano", pos=Vector3.new(-631.64, 56.52, 204.75)},
+    {name="🐠 Coral Reefs", pos=Vector3.new(-3142.84, 3.37, 2130.26)},
+    {name="🌊 Esoteric Depths", pos=Vector3.new(3256.75, -1300.66, 1393.43)},
+    {name="🌴 Tropical Grove", pos=Vector3.new(-2064.34, 6.26, 3655.67)},
+    {name="💫 Crater Island", pos=Vector3.new(1010.25, 22.27, 5080.05)},
+    {name="💎 Treasure Room", pos=Vector3.new(-3598.42, -279.73, -1633.82)},
+    {name="🗿 Sisyphus Statue", pos=Vector3.new(-3698.62, -135.58, -1022.3)},
+    {name="🌿 Ancient Jungle", pos=Vector3.new(1274.1, 7.85, -196.86)},
+    {name="🐛 underground ", pos=Vector3.new(2097.69, -91.2, -702.12)},
+}
+
+for _, info in ipairs(teleports) do
+    local b = Instance.new("TextButton", lokasiScroll)
+    b.Size = UDim2.new(1, -16, 0, 36)
+    b.BackgroundColor3 = COLOR.CARD_LIGHT
+    b.BorderSizePixel = 0
+    b.Font = Enum.Font.GothamBold
+    b.TextSize = 12
+    b.Text = info.name
+    b.TextColor3 = COLOR.TEXT
+    b.AutoButtonColor = false
+    b.ZIndex = 2
+    Instance.new("UICorner", b).CornerRadius = UDim.new(0,6)
+    addBorder(b)
+    
+    b.MouseEnter:Connect(function()
+        b.BackgroundColor3 = COLOR.PRIMARY
+        b.TextColor3 = Color3.fromRGB(255,255,255)
+    end)
+    
+    b.MouseLeave:Connect(function()
+        b.BackgroundColor3 = COLOR.CARD_LIGHT
+        b.TextColor3 = COLOR.TEXT
+    end)
+    
+    b.MouseButton1Click:Connect(function()
+        local char = player.Character or player.CharacterAdded:Wait()
+        local hrp = char and char:FindFirstChild("HumanoidRootPart")
+        if hrp then
+            char:MoveTo(info.pos)
+        end
+    end)
+end
+
+locLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    lokasiScroll.CanvasSize = UDim2.new(0,0,0, locLayout.AbsoluteContentSize.Y + 10)
+end)
+
+-- Tab switching
+local function setActiveTab(tab)
+    for _, tabBtn in ipairs({tabFishing, tabSetting, tabLokasi}) do
+        tabBtn.BackgroundColor3 = COLOR.CARD_LIGHT
+        tabBtn.TextColor3 = COLOR.TEXT
+        for _, child in ipairs(tabBtn:GetChildren()) do
+            if child:IsA("UIGradient") then
+                child:Destroy()
+            end
+        end
+    end
+    
+    if tab == "Fishing" then
+        frameFishing.Visible = true; frameSetting.Visible = false; frameLokasi.Visible = false
+        tabFishing.BackgroundColor3 = COLOR.PRIMARY
+        tabFishing.TextColor3 = Color3.fromRGB(255,255,255)
+        addGradient(tabFishing)
+    elseif tab == "Setting" then
+        frameFishing.Visible = false; frameSetting.Visible = true; frameLokasi.Visible = false
+        tabSetting.BackgroundColor3 = COLOR.PRIMARY
+        tabSetting.TextColor3 = Color3.fromRGB(255,255,255)
+        addGradient(tabSetting)
+    else
+        frameFishing.Visible = false; frameSetting.Visible = false; frameLokasi.Visible = true
+        tabLokasi.BackgroundColor3 = COLOR.PRIMARY
+        tabLokasi.TextColor3 = Color3.fromRGB(255,255,255)
+        addGradient(tabLokasi)
+    end
+end
+
+-- Minimize / floating
+local floatGui = Instance.new("ScreenGui")
+floatGui.Name = "JSY_FISH"
+floatGui.ResetOnSpawn = false
+floatGui.Parent = coregui
+floatGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+local floatBtn = Instance.new("ImageButton", floatGui)
+floatBtn.Size = UDim2.new(0, 45, 0, 45)
+floatBtn.Position = UDim2.new(0, 12, 0, 12)
+floatBtn.AnchorPoint = Vector2.new(0, 0)
+floatBtn.BorderSizePixel = 0
+floatBtn.Image = "rbxassetid://86295158918012"
+floatBtn.ScaleType = Enum.ScaleType.Fit
+floatBtn.Active = true
+floatBtn.Draggable = false
+Instance.new("UICorner", floatBtn).CornerRadius = UDim.new(0, 12)
+addBorder(floatBtn)
+floatGui.Enabled = false
+
+floatBtn.MouseEnter:Connect(function()
+    local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    local tween = TweenService:Create(floatBtn, tweenInfo, {Size = UDim2.new(0, 62, 0, 62)})
+    tween:Play()
+end)
+
+floatBtn.MouseLeave:Connect(function()
+    local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    local tween = TweenService:Create(floatBtn, tweenInfo, {Size = UDim2.new(0, 45, 0, 45)})
+    tween:Play()
+end)
+
+-- ---------- CROSSHAIR SYSTEM ----------
+local crosshairGui = Instance.new("ScreenGui")
+crosshairGui.Name = "Crosshair"
+crosshairGui.ResetOnSpawn = false
+crosshairGui.Parent = coregui
+crosshairGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+crosshairGui.Enabled = false
+
+local crosshair = Instance.new("Frame", crosshairGui)
+crosshair.Size = UDim2.new(0, 40, 0, 40)
+crosshair.Position = UDim2.new(0, tapPosition.X - 20, 0, tapPosition.Y - 20)
+crosshair.BackgroundTransparency = 1
+crosshair.Active = true
+crosshair.Draggable = true
+
+-- Crosshair X kecil
+local function createXCrosshair(parent)
+    local container = Instance.new("Frame", parent)
+    container.Size = UDim2.new(1, 0, 1, 0)
+    container.BackgroundTransparency = 1
+    container.ClipsDescendants = false
+    
+    local line1 = Instance.new("Frame", container)
+    line1.Size = UDim2.new(0, 3, 0, 25)
+    line1.AnchorPoint = Vector2.new(0.5, 0.5)
+    line1.Position = UDim2.new(0.5, 0, 0.5, 0)
+    line1.BackgroundColor3 = COLOR.ACCENT
+    line1.BorderSizePixel = 0
+    line1.Rotation = 45
+    Instance.new("UICorner", line1).CornerRadius = UDim.new(1, 0)
+    
+    local line2 = Instance.new("Frame", container)
+    line2.Size = UDim2.new(0, 3, 0, 25)
+    line2.AnchorPoint = Vector2.new(0.5, 0.5)
+    line2.Position = UDim2.new(0.5, 0, 0.5, 0)
+    line2.BackgroundColor3 = COLOR.ACCENT
+    line2.BorderSizePixel = 0
+    line2.Rotation = -45
+    Instance.new("UICorner", line2).CornerRadius = UDim.new(1, 0)
+    
+    local centerDot = Instance.new("Frame", container)
+    centerDot.Size = UDim2.new(0, 3, 0, 3)
+    centerDot.AnchorPoint = Vector2.new(0.5, 0.5)
+    centerDot.Position = UDim2.new(0.5, 0, 0.5, 0)
+    centerDot.BackgroundColor3 = Color3.fromRGB(255, 255, 255)
+    centerDot.BorderSizePixel = 0
+    Instance.new("UICorner", centerDot).CornerRadius = UDim.new(1, 0)
+    
+    local line1Border = Instance.new("UIStroke", line1)
+    line1Border.Color = COLOR.PRIMARY
+    line1Border.Thickness = 1
+    
+    local line2Border = Instance.new("UIStroke", line2)
+    line2Border.Color = COLOR.PRIMARY
+    line2Border.Thickness = 1
+    
+    local pulseConnection
+    local function startPulse()
+        if pulseConnection then pulseConnection:Disconnect() end
+        
+        pulseConnection = RunService.Heartbeat:Connect(function()
+            local time = tick()
+            local pulse = math.sin(time * 4) * 0.2 + 0.8
+            line1.BackgroundTransparency = 1 - pulse
+            line2.BackgroundTransparency = 1 - pulse
+            centerDot.BackgroundTransparency = 1 - (pulse * 1.2)
+        end)
+    end
+    
+    local function stopPulse()
+        if pulseConnection then
+            pulseConnection:Disconnect()
+            pulseConnection = nil
+        end
+        line1.BackgroundTransparency = 0
+        line2.BackgroundTransparency = 0
+        centerDot.BackgroundTransparency = 0
+    end
+    
+    startPulse()
+    
+    return {
+        StartPulse = startPulse,
+        StopPulse = stopPulse
+    }
+end
+
+local xCrosshair = createXCrosshair(crosshair)
+
+-- Fungsi untuk tap di posisi yang sudah diatur
+local function tapAtPosition()
+    if protectingGUI then
+        return
+    end
+    
+    local crosshairPos = crosshair.AbsolutePosition
+    local crosshairSize = crosshair.AbsoluteSize
+    local centerX = crosshairPos.X + (crosshairSize.X / 1)
+    local centerY = crosshairPos.Y + (crosshairSize.Y / 1)
+    
+    VirtualInputManager:SendMouseButtonEvent(centerX, centerY, 0, true, game, 1)
+    task.wait()
+    VirtualInputManager:SendMouseButtonEvent(centerX, centerY, 0, false, game, 1)
+end
+
+-- Loop auto tap
+task.spawn(function()
+    local tapSpeed = 0.01
+    while task.wait(tapSpeed) do
+        if autoTap then
+            pcall(tapAtPosition)
+        end
+    end
+end)
+
+-- ---------- BUTTON FUNCTIONALITY ----------
+
+-- Auto Clicker Button
+btnAutoClick.MouseButton1Click:Connect(function()
+    protectingGUI = true
+    
+    autoTap = not autoTap
+    
+    if autoTap then
+        btnAutoClick.Text = "ON"
+        btnAutoClick.BackgroundColor3 = COLOR.SUCCESS
+        btnAutoClick.TextColor3 = Color3.fromRGB(20,20,20)
+        
+        -- Auto tutup menu ketika Auto Clicker dihidupkan
+        main.Visible = false
+        floatGui.Enabled = true
+        
+    else
+        btnAutoClick.Text = "OFF"
+        btnAutoClick.BackgroundColor3 = COLOR.CARD_LIGHT
+        btnAutoClick.TextColor3 = COLOR.TEXT
+    end
+    
+    task.wait(0.5)
+    protectingGUI = false
+end)
+
+-- Float Button
+floatBtn.MouseButton1Click:Connect(function()
+    -- Auto matikan Auto Clicker ketika float button ditekan
+    if autoTap then
+        autoTap = false
+        btnAutoClick.Text = "OFF"
+        btnAutoClick.BackgroundColor3 = COLOR.CARD_LIGHT
+        btnAutoClick.TextColor3 = COLOR.TEXT
+    end
+    
+    main.Visible = true
+    floatGui.Enabled = false
+end)
+
+-- Atur Posisi Button
+btnSetPos.MouseButton1Click:Connect(function()
+    protectingGUI = true
+    
+    settingPosition = not settingPosition
+    
+    if settingPosition then
+        btnSetPos.Text = "ON"
+        btnSetPos.BackgroundColor3 = COLOR.WARNING
+        btnSetPos.TextColor3 = Color3.fromRGB(20,20,20)
+        crosshairGui.Enabled = true
+        
+        local dragConnection
+        dragConnection = crosshair.Changed:Connect(function()
+            if crosshair.Position ~= UDim2.new(0, tapPosition.X - 20, 0, tapPosition.Y - 20) then
+                local pos = crosshair.AbsolutePosition
+                local size = crosshair.AbsoluteSize
+                tapPosition = Vector2.new(pos.X + (size.X / 2), pos.Y + (size.Y / 2))
+            end
+        end)
+        
+        btnSetPos:SetAttribute("DragConnection", dragConnection)
+    else
+        btnSetPos.Text = "OFF"
+        btnSetPos.BackgroundColor3 = COLOR.CARD_LIGHT
+        btnSetPos.TextColor3 = COLOR.TEXT
+        crosshairGui.Enabled = false
+        
+        local dragConnection = btnSetPos:GetAttribute("DragConnection")
+        if dragConnection then
+            dragConnection:Disconnect()
+        end
+    end
+    
+    task.wait(0.5)
+    protectingGUI = false
+end)
+
+-- Freeze Button
+btnFreeze.MouseButton1Click:Connect(function()
+    protectingGUI = true
+    
+    if not player.Character then 
+        task.wait(0.5)
+        protectingGUI = false
+        return 
+    end
+    
+    frozen = not frozen
+    if frozen then
+        btnFreeze.Text = "ON"
+        btnFreeze.BackgroundColor3 = COLOR.SUCCESS
+        btnFreeze.TextColor3 = Color3.fromRGB(20,20,20)
+        local root = player.Character:WaitForChild("HumanoidRootPart")
+        freezePos = root.CFrame
+        if freezeConnection then freezeConnection:Disconnect(); freezeConnection = nil end
+        freezeConnection = RunService.Heartbeat:Connect(function()
+            local char = player.Character
+            if char and char.Parent then
+                local hrp = char:FindFirstChild("HumanoidRootPart")
+                if hrp then
+                    hrp.AssemblyLinearVelocity = Vector3.zero
+                    hrp.AssemblyAngularVelocity = Vector3.zero
+                    if (hrp.Position - freezePos.Position).Magnitude > 0.1 then
+                        hrp.CFrame = freezePos
+                    end
+                end
+            else
+                if freezeConnection then freezeConnection:Disconnect(); freezeConnection = nil end
+            end
+        end)
+    else
+        btnFreeze.Text = "OFF"
+        btnFreeze.BackgroundColor3 = COLOR.CARD_LIGHT
+        btnFreeze.TextColor3 = COLOR.TEXT
+        if freezeConnection then freezeConnection:Disconnect(); freezeConnection = nil end
+    end
+    
+    task.wait(0.5)
+    protectingGUI = false
+end)
+
+-- Radar Button
+btnRadar.MouseButton1Click:Connect(function()
+    protectingGUI = true
+    
+    if not player.Character then 
+        task.wait(0.5)
+        protectingGUI = false
+        return 
+    end
+    
+    radarActive = not radarActive
+    if radarActive then
+        btnRadar.Text = "ON"
+        btnRadar.BackgroundColor3 = COLOR.SUCCESS
+        btnRadar.TextColor3 = Color3.fromRGB(20,20,20)
+        if UpdateFishingRadar then pcall(function() UpdateFishingRadar:InvokeServer(true) end) end
+    else
+        btnRadar.Text = "OFF"
+        btnRadar.BackgroundColor3 = COLOR.CARD_LIGHT
+        btnRadar.TextColor3 = COLOR.TEXT
+        if UpdateFishingRadar then pcall(function() UpdateFishingRadar:InvokeServer(false) end) end
+    end
+    
+    task.wait(0.5)
+    protectingGUI = false
+end)
+
+-- Weather System
+local RFPurchaseWeatherEvent = getRemote("RF/PurchaseWeatherEvent")
+local weatherActive = false
+
+local buyWeatherBtn = Instance.new("TextButton", frameSetting)
+buyWeatherBtn.Size = UDim2.new(1, -20, 0, 36)
+buyWeatherBtn.Position = UDim2.new(0, 10, 0, 76)
+buyWeatherBtn.BackgroundColor3 = COLOR.CARD_LIGHT
+buyWeatherBtn.Font = Enum.Font.GothamBold
+buyWeatherBtn.Text = "🌦️AUTO BUY WEATHER : OFF"
+buyWeatherBtn.TextSize = 12
+buyWeatherBtn.TextColor3 = COLOR.TEXT
+buyWeatherBtn.BorderSizePixel = 0
+buyWeatherBtn.AutoButtonColor = false
+buyWeatherBtn.ZIndex = 2
+Instance.new("UICorner", buyWeatherBtn).CornerRadius = UDim.new(0,8)
+addBorder(buyWeatherBtn, COLOR.PRIMARY)
+
+buyWeatherBtn.MouseEnter:Connect(function()
+    if not weatherActive then
+        buyWeatherBtn.BackgroundColor3 = Color3.fromRGB(30, 45, 65)
+    end
+end)
+buyWeatherBtn.MouseLeave:Connect(function()
+    if not weatherActive then
+        buyWeatherBtn.BackgroundColor3 = COLOR.CARD_LIGHT
+    end
+end)
+
+local function purchaseWeather()
+    if not RFPurchaseWeatherEvent then return end
+    local weathers = {"Wind", "Snow", "Storm"}
+    for _, w in ipairs(weathers) do
+        pcall(function()
+            RFPurchaseWeatherEvent:InvokeServer(w)
+        end)
+        task.wait(0.6)
+    end
+end
+
+task.spawn(function()
+    while true do
+        if weatherActive then
+            purchaseWeather()
+        end
+        task.wait(3)
+    end
+end)
+
+buyWeatherBtn.MouseButton1Click:Connect(function()
+    protectingGUI = true
+    
+    weatherActive = not weatherActive
+    if weatherActive then
+        buyWeatherBtn.Text = "🌦️AUTO BUY WEATHER : ON"
+        buyWeatherBtn.BackgroundColor3 = COLOR.SUCCESS
+        buyWeatherBtn.TextColor3 = Color3.fromRGB(20,20,20)
+        addBorder(buyWeatherBtn, COLOR.SUCCESS)
+    else
+        buyWeatherBtn.Text = "🌦️AUTO BUY WEATHER : OFF"
+        buyWeatherBtn.BackgroundColor3 = COLOR.CARD_LIGHT
+        buyWeatherBtn.TextColor3 = COLOR.TEXT
+        addBorder(buyWeatherBtn, COLOR.PRIMARY)
+    end
+    
+    task.wait(0.5)
+    protectingGUI = false
+end)
+
+-- Sell All Button
+sellAllBtn.MouseButton1Click:Connect(function()
+    protectingGUI = true
+    safeInvoke(SellAllItems)
+    task.wait(0.5)
+    protectingGUI = false
+end)
+
+-- Tab Buttons dengan protection
+tabFishing.MouseButton1Click:Connect(function() 
+    protectingGUI = true
+    setActiveTab("Fishing") 
+    task.wait(0.5)
+    protectingGUI = false
+end)
+
+tabSetting.MouseButton1Click:Connect(function() 
+    protectingGUI = true
+    setActiveTab("Setting") 
+    task.wait(0.5)
+    protectingGUI = false
+end)
+
+tabLokasi.MouseButton1Click:Connect(function() 
+    protectingGUI = true
+    setActiveTab("Lokasi") 
+    task.wait(0.5)
+    protectingGUI = false
+end)
+
+-- Minimize Button
+btnMin.MouseButton1Click:Connect(function()
+    protectingGUI = true
+    main.Visible = false
+    floatGui.Enabled = true
+    task.wait(0.5)
+    protectingGUI = false
+end)
+
+-- Close Button
+btnClose.MouseButton1Click:Connect(function()
+    gui:Destroy()
+    floatGui:Destroy()
+    crosshairGui:Destroy()
+end)
+
+-- Set default tab
+setActiveTab("Fishing")
