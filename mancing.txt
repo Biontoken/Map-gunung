@@ -562,7 +562,8 @@ local tapSpeed = 0.01 -- super cepat
 -- Area tap (posisi tetap, sedikit lebih kanan & bawah)
 local TapArea = Instance.new("Frame", gui)
 TapArea.Size = UDim2.new(0, 40, 0, 40)
-TapArea.Position = UDim2.new(0, 20, 0, 20) -- geser kanan & bawah sedikit
+TapArea.AnchorPoint = Vector2.new(0, 1) -- titik anchor di bawah kiri
+TapArea.Position = UDim2.new(0, 20, 1, -20) -- 20px dari kiri, 20px dari bawah
 TapArea.BackgroundTransparency = 1
 TapArea.Active = true
 TapArea.Draggable = false
@@ -694,4 +695,5 @@ sellAllBtn.MouseButton1Click:Connect(function()
 end)
 
 -- Set default tab
+
 setActiveTab("Fishing")
