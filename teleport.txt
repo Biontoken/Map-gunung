@@ -1,0 +1,1240 @@
+-- ✈️ Dual Mode Teleport (No Space Below Progressbar) - FINAL FIXED VERSION WITH SAVE/LOAD
+local Players = game:GetService("Players")
+local RunService = game:GetService("RunService")
+local TweenService = game:GetService("TweenService")
+local HttpService = game:GetService("HttpService")
+local LP = Players.LocalPlayer
+
+-- Variables
+local coords = {}
+local undoStack, redoStack = {}, {}
+local running = false
+local repeatOn, respawnOn = false, false
+local flySpeed = 400
+local noclipActive = false
+local noclipConnection
+local flyThread
+local currentBodyVelocity
+local teleportMode = "fly"
+
+-- Color Scheme
+local Colors = {
+    Background = Color3.fromRGB(30, 30, 40),
+    Header = Color3.fromRGB(25, 25, 35),
+    Primary = Color3.fromRGB(0, 120, 255),
+    Secondary = Color3.fromRGB(150, 0, 200),
+    Success = Color3.fromRGB(0, 200, 100),
+    Danger = Color3.fromRGB(220, 60, 60),
+    Warning = Color3.fromRGB(255, 150, 0),
+    Text = Color3.fromRGB(240, 240, 240),
+    DarkText = Color3.fromRGB(180, 180, 180),
+    Input = Color3.fromRGB(45, 45, 55),
+    Progress = Color3.fromRGB(50, 50, 60)
+}
+
+-- Noclip Functions
+local function enableNoclip()
+    if noclipActive then return end
+    noclipActive = true
+    noclipConnection = RunService.Stepped:Connect(function()
+        local char = LP.Character
+        if char then
+            for _, part in ipairs(char:GetDescendants()) do
+                if part:IsA("BasePart") then
+                    part.CanCollide = false
+                end
+            end
+        end
+    end)
+end
+
+local function disableNoclip()
+    noclipActive = false
+    if noclipConnection then
+        noclipConnection:Disconnect()
+        noclipConnection = nil
+    end
+    local char = LP.Character
+    if char then
+        for _, part in ipairs(char:GetDescendants()) do
+            if part:IsA("BasePart") then
+                part.CanCollide = true
+            end
+        end
+    end
+end
+
+local function cleanupBodyVelocity()
+    if currentBodyVelocity and currentBodyVelocity.Parent then
+        currentBodyVelocity:Destroy()
+        currentBodyVelocity = nil
+    end
+end
+
+-- File Management Functions
+local function ensureFolder()
+    if not isfolder("jsytele") then
+        makefolder("jsytele")
+    end
+end
+
+local function getSavedFiles()
+    ensureFolder()
+    local files = {}
+    if isfolder("jsytele") then
+        for _, file in ipairs(listfiles("jsytele")) do
+            if file:sub(-5):lower() == ".json" then
+                table.insert(files, file:match("([^/]+)%.json$"))
+            end
+        end
+    end
+    return files
+end
+
+local function saveCoordinates(filename, coordText)
+    ensureFolder()
+    local filepath = "jsytele/" .. filename .. ".json"
+    
+    -- Count how many coordinates are in the text
+    local count = 0
+    for _ in coordText:gmatch("[^\r\n]+") do
+        count = count + 1
+    end
+    
+    local data = {
+        coordText = coordText,
+        timestamp = os.time(),
+        count = count
+    }
+    
+    local success, err = pcall(function()
+        writefile(filepath, HttpService:JSONEncode(data))
+    end)
+    
+    return success, count
+end
+
+local function loadCoordinates(filename)
+    ensureFolder()
+    local filepath = "jsytele/" .. filename .. ".json"
+    
+    if not isfile(filepath) then
+        return nil, 0
+    end
+    
+    local success, data = pcall(function()
+        return HttpService:JSONDecode(readfile(filepath))
+    end)
+    
+    if not success or not data or not data.coordText then
+        return nil, 0
+    end
+    
+    return data.coordText, data.count or 0
+end
+
+local function deleteSavedFile(filename)
+    ensureFolder()
+    local filepath = "jsytele/" .. filename .. ".json"
+    if isfile(filepath) then
+        delfile(filepath)
+        return true
+    end
+    return false
+end
+
+-- === COMPACT GUI NO SPACE ===
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "CompactTeleportGUI"
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+ScreenGui.Parent = game.CoreGui
+
+-- Main Container
+local MainContainer = Instance.new("Frame")
+MainContainer.Size = UDim2.new(0, 380, 0, 290)
+MainContainer.Position = UDim2.new(0.3, 0, 0.3, 0)
+MainContainer.BackgroundColor3 = Colors.Background
+MainContainer.BackgroundTransparency = 0.1
+MainContainer.Active = true
+MainContainer.Draggable = true
+MainContainer.Parent = ScreenGui
+
+local UICorner = Instance.new("UICorner")
+UICorner.CornerRadius = UDim.new(0, 10)
+UICorner.Parent = MainContainer
+
+local UIStroke = Instance.new("UIStroke")
+UIStroke.Color = Color3.fromRGB(100, 100, 150)
+UIStroke.Thickness = 1
+UIStroke.Parent = MainContainer
+
+-- Header dengan minimize button
+local Header = Instance.new("Frame")
+Header.Size = UDim2.new(1, 0, 0, 30)
+Header.Position = UDim2.new(0, 0, 0, 0)
+Header.BackgroundColor3 = Colors.Header
+Header.Parent = MainContainer
+
+local HeaderCorner = Instance.new("UICorner")
+HeaderCorner.CornerRadius = UDim.new(0, 10)
+HeaderCorner.Parent = Header
+
+local Title = Instance.new("TextLabel")
+Title.Size = UDim2.new(1, -70, 1, 0)
+Title.Position = UDim2.new(0, 8, 0, 0)
+Title.BackgroundTransparency = 1
+Title.Text = "JSY TELEPORT"
+Title.TextColor3 = Colors.Text
+Title.Font = Enum.Font.GothamBold
+Title.TextSize = 12
+Title.TextXAlignment = Enum.TextXAlignment.Left
+Title.Parent = Header
+
+-- Minimize Button
+local MinBtn = Instance.new("TextButton")
+MinBtn.Size = UDim2.new(0, 25, 0, 25)
+MinBtn.Position = UDim2.new(1, -60, 0, 2)
+MinBtn.Text = "_"
+MinBtn.TextColor3 = Colors.Text
+MinBtn.TextSize = 14
+MinBtn.Font = Enum.Font.GothamBold
+MinBtn.BackgroundColor3 = Colors.Warning
+MinBtn.Parent = Header
+
+local MinCorner = Instance.new("UICorner")
+MinCorner.CornerRadius = UDim.new(0, 5)
+MinCorner.Parent = MinBtn
+
+-- Close Button (menghancurkan GUI)
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0, 25, 0, 25)
+CloseBtn.Position = UDim2.new(1, -30, 0, 2)
+CloseBtn.Text = "×"
+CloseBtn.TextColor3 = Colors.Text
+CloseBtn.TextSize = 14
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.BackgroundColor3 = Colors.Danger
+CloseBtn.Parent = Header
+
+local CloseCorner = Instance.new("UICorner")
+CloseCorner.CornerRadius = UDim.new(0, 5)
+CloseCorner.Parent = CloseBtn
+
+-- Main Content Area (tanpa space bawah)
+local Content = Instance.new("Frame")
+Content.Size = UDim2.new(1, -10, 1, -35)
+Content.Position = UDim2.new(0, 5, 0, 30)
+Content.BackgroundTransparency = 1
+Content.Parent = MainContainer
+
+-- ========================
+-- SECTION 1: COORDINATES INPUT WITH SCROLL
+-- ========================
+local CoordSection = Instance.new("Frame")
+CoordSection.Size = UDim2.new(0.58, -3, 0, 180)
+CoordSection.Position = UDim2.new(0, 0, 0, 0)
+CoordSection.BackgroundColor3 = Colors.Input
+CoordSection.Parent = Content
+
+local SectionCorner = Instance.new("UICorner")
+SectionCorner.CornerRadius = UDim.new(0, 6)
+SectionCorner.Parent = CoordSection
+
+local SectionStroke = Instance.new("UIStroke")
+SectionStroke.Color = Color3.fromRGB(60, 60, 80)
+SectionStroke.Thickness = 1
+SectionStroke.Parent = CoordSection
+
+-- Scrolling Frame untuk coordinates
+local ScrollFrame = Instance.new("ScrollingFrame")
+ScrollFrame.Size = UDim2.new(1, -6, 1, -6)
+ScrollFrame.Position = UDim2.new(0, 3, 0, 3)
+ScrollFrame.BackgroundColor3 = Colors.Background
+ScrollFrame.BackgroundTransparency = 1
+ScrollFrame.BorderSizePixel = 0
+ScrollFrame.ScrollBarThickness = 6
+ScrollFrame.ScrollBarImageColor3 = Colors.DarkText
+ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+ScrollFrame.Parent = CoordSection
+
+local ScrollCorner = Instance.new("UICorner")
+ScrollCorner.CornerRadius = UDim.new(0, 4)
+ScrollCorner.Parent = ScrollFrame
+
+-- Di bagian COORDINATES INPUT, ganti TextBox ini:
+local CoordBox = Instance.new("TextBox")
+CoordBox.Size = UDim2.new(1, 0, 1, 0)
+CoordBox.Position = UDim2.new(0, 0, 0, 0)
+CoordBox.BackgroundTransparency = 1
+CoordBox.TextColor3 = Colors.Text
+CoordBox.PlaceholderText = "X, Y, Z\nX, Y, Z\n..."
+CoordBox.PlaceholderColor3 = Colors.DarkText
+CoordBox.ClearTextOnFocus = false
+CoordBox.MultiLine = true
+CoordBox.TextXAlignment = Enum.TextXAlignment.Left
+CoordBox.TextYAlignment = Enum.TextYAlignment.Top
+CoordBox.TextWrapped = false
+CoordBox.Font = Enum.Font.RobotoMono
+CoordBox.TextSize = 10
+CoordBox.Text = ""  -- PASTIKAN TEXT KOSONG AWALNYA
+CoordBox.Parent = ScrollFrame
+
+-- Function untuk update scroll size
+local function updateScrollSize()
+    local lineCount = 0
+    for _ in CoordBox.Text:gmatch("[^\r\n]+") do
+        lineCount = lineCount + 1
+    end
+    
+    local textHeight = math.max(lineCount * 12, 150) -- Minimum height 150
+    ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, textHeight)
+    
+    -- Auto scroll ke bawah ketika text bertambah
+    if ScrollFrame.CanvasPosition.Y + ScrollFrame.AbsoluteWindowSize.Y < textHeight - 10 then
+        ScrollFrame.CanvasPosition = Vector2.new(0, textHeight)
+    end
+end
+
+CoordBox:GetPropertyChangedSignal("Text"):Connect(updateScrollSize)
+
+-- ========================
+-- SECTION 2: CONTROL BUTTONS
+-- ========================
+local ControlSection = Instance.new("Frame")
+ControlSection.Size = UDim2.new(0.42, -3, 0, 180)
+ControlSection.Position = UDim2.new(0.58, 3, 0, 0)
+ControlSection.BackgroundColor3 = Colors.Input
+ControlSection.Parent = Content
+
+local ControlCorner = Instance.new("UICorner")
+ControlCorner.CornerRadius = UDim.new(0, 6)
+ControlCorner.Parent = ControlSection
+
+local ControlStroke = Instance.new("UIStroke")
+ControlStroke.Color = Color3.fromRGB(60, 60, 80)
+ControlStroke.Thickness = 1
+ControlStroke.Parent = ControlSection
+
+-- Modern Button Function
+local function createModernButton(parent, text, position, size, color)
+    local btn = Instance.new("TextButton")
+    btn.Size = size
+    btn.Position = position
+    btn.Text = text
+    btn.BackgroundColor3 = color
+    btn.TextColor3 = Colors.Text
+    btn.Font = Enum.Font.GothamBold
+    btn.TextSize = 10
+    btn.Parent = parent
+    
+    local btnCorner = Instance.new("UICorner")
+    btnCorner.CornerRadius = UDim.new(0, 4)
+    btnCorner.Parent = btn
+    
+    local btnStroke = Instance.new("UIStroke")
+    btnStroke.Color = Color3.fromRGB(255, 255, 255)
+    btnStroke.Thickness = 0.5
+    btnStroke.Transparency = 0.8
+    btnStroke.Parent = btn
+    
+    -- Hover effect
+    btn.MouseEnter:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundTransparency = 0}):Play()
+        TweenService:Create(btnStroke, TweenInfo.new(0.15), {Transparency = 0}):Play()
+    end)
+    
+    btn.MouseLeave:Connect(function()
+        TweenService:Create(btn, TweenInfo.new(0.15), {BackgroundTransparency = 0.2}):Play()
+        TweenService:Create(btnStroke, TweenInfo.new(0.15), {Transparency = 0.8}):Play()
+    end)
+    
+    return btn
+end
+
+-- Baris 1: Save Position
+local SaveBtn = createModernButton(ControlSection, "💾 SAVE", 
+    UDim2.new(0.05, 0, 0.05, 0), UDim2.new(0.9, 0, 0.11, 0), Colors.Primary)
+
+-- Baris 2: Undo & Redo
+local UndoBtn = createModernButton(ControlSection, "↩️ UNDO", 
+    UDim2.new(0.05, 0, 0.18, 0), UDim2.new(0.425, 0, 0.11, 0), Colors.Warning)
+
+local RedoBtn = createModernButton(ControlSection, "↪️ REDO", 
+    UDim2.new(0.525, 0, 0.18, 0), UDim2.new(0.425, 0, 0.11, 0), Colors.Warning)
+
+-- Baris 3: Clear & Example
+local ClearBtn = createModernButton(ControlSection, "🗑️ CLEAR", 
+    UDim2.new(0.05, 0, 0.31, 0), UDim2.new(0.425, 0, 0.11, 0), Colors.Danger)
+
+local ExampleBtn = createModernButton(ControlSection, "📋 EXAMPLE", 
+    UDim2.new(0.525, 0, 0.31, 0), UDim2.new(0.425, 0, 0.11, 0), Colors.Secondary)
+
+-- Baris 4: Mode Toggle
+local ModeToggle = createModernButton(ControlSection, "🚀 FLY MODE", 
+    UDim2.new(0.05, 0, 0.44, 0), UDim2.new(0.9, 0, 0.11, 0), Colors.Primary)
+
+-- Baris 5: Repeat & Respawn
+local RepeatBtn = createModernButton(ControlSection, "🔄 REPEAT", 
+    UDim2.new(0.05, 0, 0.57, 0), UDim2.new(0.425, 0, 0.11, 0), Colors.Warning)
+
+local RespawnBtn = createModernButton(ControlSection, "💀 RESPAWN", 
+    UDim2.new(0.525, 0, 0.57, 0), UDim2.new(0.425, 0, 0.11, 0), Colors.Danger)
+
+-- Baris 6: Start & Stop
+local StartBtn = createModernButton(ControlSection, "▶️ START", 
+    UDim2.new(0.05, 0, 0.70, 0), UDim2.new(0.425, 0, 0.11, 0), Colors.Success)
+
+local StopBtn = createModernButton(ControlSection, "⏹️ STOP", 
+    UDim2.new(0.525, 0, 0.70, 0), UDim2.new(0.425, 0, 0.11, 0), Colors.Danger)
+
+-- BARIS BARU: Save File & Load File (di bawah Start & Stop)
+local SaveFileBtn = createModernButton(ControlSection, "💾 SAVE FILE", 
+    UDim2.new(0.05, 0, 0.83, 0), UDim2.new(0.425, 0, 0.11, 0), Colors.Success)
+
+local LoadFileBtn = createModernButton(ControlSection, "📂 LOAD FILE", 
+    UDim2.new(0.525, 0, 0.83, 0), UDim2.new(0.425, 0, 0.11, 0), Colors.Secondary)
+
+-- ========================
+-- SECTION 3: SETTINGS & PROGRESS (TANPA SPACE BAWAH)
+-- ========================
+local BottomSection = Instance.new("Frame")
+BottomSection.Size = UDim2.new(1, 0, 0, 65) -- Diperkecil dari 70 ke 65
+BottomSection.Position = UDim2.new(0, 0, 0, 185) -- Dinaikkan lebih rapat
+BottomSection.BackgroundColor3 = Colors.Input
+BottomSection.Parent = Content
+
+local BottomCorner = Instance.new("UICorner")
+BottomCorner.CornerRadius = UDim.new(0, 6)
+BottomCorner.Parent = BottomSection
+
+local BottomStroke = Instance.new("UIStroke")
+BottomStroke.Color = Color3.fromRGB(60, 60, 80)
+BottomStroke.Thickness = 1
+BottomStroke.Parent = BottomSection
+
+-- Settings Grid
+local DelayLabel = Instance.new("TextLabel")
+DelayLabel.Size = UDim2.new(0.25, 0, 0, 18)
+DelayLabel.Position = UDim2.new(0.05, 0, 0.12, 0) -- Dinaikkan
+DelayLabel.BackgroundTransparency = 1
+DelayLabel.Text = "Delay:"
+DelayLabel.TextColor3 = Colors.DarkText
+DelayLabel.Font = Enum.Font.Gotham
+DelayLabel.TextSize = 10
+DelayLabel.TextXAlignment = Enum.TextXAlignment.Left
+DelayLabel.Parent = BottomSection
+
+local DelayBox = Instance.new("TextBox")
+DelayBox.Size = UDim2.new(0.15, 0, 0, 18)
+DelayBox.Position = UDim2.new(0.30, 0, 0.12, 0) -- Dinaikkan
+DelayBox.BackgroundColor3 = Colors.Background
+DelayBox.TextColor3 = Colors.Text
+DelayBox.PlaceholderText = "1"
+DelayBox.Text = "1"
+DelayBox.Font = Enum.Font.Gotham
+DelayBox.TextSize = 10
+DelayBox.Parent = BottomSection
+
+local DelayCorner = Instance.new("UICorner")
+DelayCorner.CornerRadius = UDim.new(0, 3)
+DelayCorner.Parent = DelayBox
+
+local SpeedLabel = Instance.new("TextLabel")
+SpeedLabel.Size = UDim2.new(0.25, 0, 0, 18)
+SpeedLabel.Position = UDim2.new(0.55, 0, 0.12, 0) -- Dinaikkan
+SpeedLabel.BackgroundTransparency = 1
+SpeedLabel.Text = "Speed:"
+SpeedLabel.TextColor3 = Colors.DarkText
+SpeedLabel.Font = Enum.Font.Gotham
+SpeedLabel.TextSize = 10
+SpeedLabel.TextXAlignment = Enum.TextXAlignment.Left
+SpeedLabel.Parent = BottomSection
+
+local SpeedBox = Instance.new("TextBox")
+SpeedBox.Size = UDim2.new(0.15, 0, 0, 18)
+SpeedBox.Position = UDim2.new(0.80, 0, 0.12, 0) -- Dinaikkan
+SpeedBox.BackgroundColor3 = Colors.Background
+SpeedBox.TextColor3 = Colors.Text
+SpeedBox.PlaceholderText = "400"
+SpeedBox.Text = "400"
+SpeedBox.Font = Enum.Font.Gotham
+SpeedBox.TextSize = 10
+SpeedBox.Parent = BottomSection
+
+local SpeedCorner = Instance.new("UICorner")
+SpeedCorner.CornerRadius = UDim.new(0, 3)
+SpeedCorner.Parent = SpeedBox
+
+-- Progress Section (TANPA SPACE BAWAH - menempel ke border bawah)
+local ProgressText = Instance.new("TextLabel")
+ProgressText.Size = UDim2.new(1, -10, 0, 15)
+ProgressText.Position = UDim2.new(0, 5, 0, 35) -- Dinaikkan
+ProgressText.BackgroundTransparency = 1
+ProgressText.Text = "Ready to teleport"
+ProgressText.TextColor3 = Colors.Text
+ProgressText.Font = Enum.Font.Gotham
+ProgressText.TextSize = 9
+ProgressText.Parent = BottomSection
+
+local ProgressBarBack = Instance.new("Frame")
+ProgressBarBack.Size = UDim2.new(1, -10, 0, 12)
+ProgressBarBack.Position = UDim2.new(0, 5, 0, 52) -- Dinaikkan sampai menempel bawah
+ProgressBarBack.BackgroundColor3 = Colors.Progress
+ProgressBarBack.Parent = BottomSection
+
+local ProgressBarCorner = Instance.new("UICorner")
+ProgressBarCorner.CornerRadius = UDim.new(0, 6)
+ProgressBarCorner.Parent = ProgressBarBack
+
+local ProgressFill = Instance.new("Frame")
+ProgressFill.Size = UDim2.new(0, 0, 1, 0)
+ProgressFill.BackgroundColor3 = Colors.Success
+ProgressFill.Parent = ProgressBarBack
+
+local ProgressFillCorner = Instance.new("UICorner")
+ProgressFillCorner.CornerRadius = UDim.new(0, 6)
+ProgressFillCorner.Parent = ProgressFill
+
+-- ========================
+-- FLOATING MINI GUI
+-- ========================
+local MiniFrame = Instance.new("Frame")
+MiniFrame.Size = UDim2.new(0, 50, 0, 50)
+MiniFrame.Position = UDim2.new(0, 20, 0, 20)
+MiniFrame.BackgroundColor3 = Colors.Primary
+MiniFrame.BackgroundTransparency = 0.1
+MiniFrame.Visible = false
+MiniFrame.Active = true
+MiniFrame.Draggable = true
+MiniFrame.Parent = ScreenGui
+
+local MiniCorner = Instance.new("UICorner")
+MiniCorner.CornerRadius = UDim.new(0, 10)
+MiniCorner.Parent = MiniFrame
+
+local MiniStroke = Instance.new("UIStroke")
+MiniStroke.Color = Colors.Text
+MiniStroke.Thickness = 1
+MiniStroke.Parent = MiniFrame
+
+local OpenBtn = Instance.new("TextButton")
+OpenBtn.Size = UDim2.new(1, 0, 1, 0)
+OpenBtn.Text = "🕳️"
+OpenBtn.TextColor3 = Colors.Text
+OpenBtn.BackgroundTransparency = 1
+OpenBtn.Font = Enum.Font.GothamBold
+OpenBtn.TextSize = 14
+OpenBtn.Parent = MiniFrame
+
+-- ========================
+-- SAVE FILE NAME GUI
+-- ========================
+local function createSaveFileNameGUI()
+    local SaveGui = Instance.new("ScreenGui")
+    SaveGui.Name = "SaveFileNameGUI"
+    SaveGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    SaveGui.Parent = ScreenGui.Parent
+
+    local MainFrame = Instance.new("Frame")
+    MainFrame.Size = UDim2.new(0, 300, 0, 150)
+    MainFrame.Position = UDim2.new(0.5, -150, 0.5, -75)
+    MainFrame.BackgroundColor3 = Colors.Background
+    MainFrame.Parent = SaveGui
+
+    local UICorner = Instance.new("UICorner")
+    UICorner.CornerRadius = UDim.new(0, 10)
+    UICorner.Parent = MainFrame
+
+    local UIStroke = Instance.new("UIStroke")
+    UIStroke.Color = Color3.fromRGB(100, 100, 150)
+    UIStroke.Thickness = 1
+    UIStroke.Parent = MainFrame
+
+    -- Header
+    local Header = Instance.new("Frame")
+    Header.Size = UDim2.new(1, 0, 0, 30)
+    Header.BackgroundColor3 = Colors.Header
+    Header.Parent = MainFrame
+
+    local HeaderCorner = Instance.new("UICorner")
+    HeaderCorner.CornerRadius = UDim.new(0, 10)
+    HeaderCorner.Parent = Header
+
+    local Title = Instance.new("TextLabel")
+    Title.Size = UDim2.new(1, 0, 1, 0)
+    Title.BackgroundTransparency = 1
+    Title.Text = "SAVE COORDINATES"
+    Title.TextColor3 = Colors.Text
+    Title.Font = Enum.Font.GothamBold
+    Title.TextSize = 12
+    Title.Parent = Header
+
+    -- Content
+    local Content = Instance.new("Frame")
+    Content.Size = UDim2.new(1, -10, 1, -40)
+    Content.Position = UDim2.new(0, 5, 0, 35)
+    Content.BackgroundTransparency = 1
+    Content.Parent = MainFrame
+
+    local FileNameLabel = Instance.new("TextLabel")
+    FileNameLabel.Size = UDim2.new(1, 0, 0, 20)
+    FileNameLabel.BackgroundTransparency = 1
+    FileNameLabel.Text = "File Name:"
+    FileNameLabel.TextColor3 = Colors.Text
+    FileNameLabel.Font = Enum.Font.Gotham
+    FileNameLabel.TextSize = 11
+    FileNameLabel.TextXAlignment = Enum.TextXAlignment.Left
+    FileNameLabel.Parent = Content
+
+    local FileNameBox = Instance.new("TextBox")
+    FileNameBox.Size = UDim2.new(1, 0, 0, 30)
+    FileNameBox.Position = UDim2.new(0, 0, 0, 25)
+    FileNameBox.BackgroundColor3 = Colors.Input
+    FileNameBox.TextColor3 = Colors.Text
+    FileNameBox.PlaceholderText = "Enter file name..."
+    FileNameBox.Font = Enum.Font.Gotham
+    FileNameBox.TextSize = 11
+    FileNameBox.Parent = Content
+
+    local FileNameCorner = Instance.new("UICorner")
+    FileNameCorner.CornerRadius = UDim.new(0, 5)
+    FileNameCorner.Parent = FileNameBox
+
+    -- Buttons
+    local ButtonContainer = Instance.new("Frame")
+    ButtonContainer.Size = UDim2.new(1, 0, 0, 30)
+    ButtonContainer.Position = UDim2.new(0, 0, 1, -30)
+    ButtonContainer.BackgroundTransparency = 1
+    ButtonContainer.Parent = Content
+
+    local AcceptBtn = createModernButton(ButtonContainer, "✓ ACCEPT", 
+        UDim2.new(0, 5, 0, 0), UDim2.new(0.45, 0, 1, 0), Colors.Success)
+
+    local CancelBtn = createModernButton(ButtonContainer, "✗ CANCEL", 
+        UDim2.new(0.55, 0, 0, 0), UDim2.new(0.45, 0, 1, 0), Colors.Danger)
+
+    -- Button Functions
+    AcceptBtn.MouseButton1Click:Connect(function()
+        local filename = FileNameBox.Text:gsub("%.json$", "") -- Remove .json extension if present
+        if filename and filename ~= "" then
+            -- Save the text directly from CoordBox
+            local success, count = saveCoordinates(filename, CoordBox.Text)
+            if success then
+                ProgressText.Text = "Saved: " .. filename .. " (" .. count .. " coordinates)"
+            else
+                ProgressText.Text = "Failed to save: " .. filename
+            end
+        else
+            ProgressText.Text = "Please enter a file name"
+        end
+        SaveGui:Destroy()
+    end)
+
+    CancelBtn.MouseButton1Click:Connect(function()
+        SaveGui:Destroy()
+    end)
+
+    FileNameBox:CaptureFocus()
+end
+
+-- ========================
+-- LOAD FILES GUI - COMPACT VERSION WITH DELETE BUTTONS
+-- ========================
+local LoadFilesGUI = nil
+
+local function createLoadFilesGUI()
+    -- Hancurkan GUI sebelumnya jika ada
+    if LoadFilesGUI then
+        LoadFilesGUI:Destroy()
+    end
+
+    LoadFilesGUI = Instance.new("ScreenGui")
+    LoadFilesGUI.Name = "LoadFilesGUI"
+    LoadFilesGUI.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    LoadFilesGUI.Parent = ScreenGui.Parent
+
+    -- GUI yang lebih kecil
+    local MainFrame = Instance.new("Frame")
+    MainFrame.Size = UDim2.new(0, 320, 0, 300) -- Diperkecil dari 400x450
+    MainFrame.Position = UDim2.new(0.5, -160, 0.5, -150)
+    MainFrame.BackgroundColor3 = Colors.Background
+    MainFrame.Parent = LoadFilesGUI
+
+    local UICorner = Instance.new("UICorner")
+    UICorner.CornerRadius = UDim.new(0, 10)
+    UICorner.Parent = MainFrame
+
+    local UIStroke = Instance.new("UIStroke")
+    UIStroke.Color = Color3.fromRGB(100, 100, 150)
+    UIStroke.Thickness = 1
+    UIStroke.Parent = MainFrame
+
+    -- Header
+    local Header = Instance.new("Frame")
+    Header.Size = UDim2.new(1, 0, 0, 30)
+    Header.BackgroundColor3 = Colors.Header
+    Header.Parent = MainFrame
+
+    local HeaderCorner = Instance.new("UICorner")
+    HeaderCorner.CornerRadius = UDim.new(0, 10)
+    HeaderCorner.Parent = Header
+
+    local Title = Instance.new("TextLabel")
+    Title.Size = UDim2.new(1, -60, 1, 0)
+    Title.Position = UDim2.new(0, 10, 0, 0)
+    Title.BackgroundTransparency = 1
+    Title.Text = "LOAD COORDINATES"
+    Title.TextColor3 = Colors.Text
+    Title.Font = Enum.Font.GothamBold
+    Title.TextSize = 12
+    Title.TextXAlignment = Enum.TextXAlignment.Left
+    Title.Parent = Header
+
+    -- Close Button
+    local CloseBtn = Instance.new("TextButton")
+    CloseBtn.Size = UDim2.new(0, 25, 0, 25)
+    CloseBtn.Position = UDim2.new(1, -30, 0, 2)
+    CloseBtn.Text = "×"
+    CloseBtn.TextColor3 = Colors.Text
+    CloseBtn.TextSize = 16
+    CloseBtn.Font = Enum.Font.GothamBold
+    CloseBtn.BackgroundColor3 = Colors.Danger
+    CloseBtn.Parent = Header
+
+    local CloseCorner = Instance.new("UICorner")
+    CloseCorner.CornerRadius = UDim.new(0, 5)
+    CloseCorner.Parent = CloseBtn
+
+    -- Content
+    local Content = Instance.new("Frame")
+    Content.Size = UDim2.new(1, -10, 1, -40)
+    Content.Position = UDim2.new(0, 5, 0, 35)
+    Content.BackgroundTransparency = 1
+    Content.Parent = MainFrame
+
+    -- Info Text
+    local InfoText = Instance.new("TextLabel")
+    InfoText.Size = UDim2.new(1, 0, 0, 15)
+    InfoText.BackgroundTransparency = 1
+    InfoText.Text = "Click file to load"
+    InfoText.TextColor3 = Colors.DarkText
+    InfoText.Font = Enum.Font.Gotham
+    InfoText.TextSize = 9
+    InfoText.Parent = Content
+
+    -- Scrolling Frame untuk file list (lebih kecil)
+    local ScrollFrame = Instance.new("ScrollingFrame")
+    ScrollFrame.Size = UDim2.new(1, 0, 0, 200) -- Diperkecil
+    ScrollFrame.Position = UDim2.new(0, 0, 0, 20)
+    ScrollFrame.BackgroundColor3 = Colors.Input
+    ScrollFrame.BorderSizePixel = 0
+    ScrollFrame.ScrollBarThickness = 6
+    ScrollFrame.ScrollBarImageColor3 = Colors.DarkText
+    ScrollFrame.Parent = Content
+
+    local ScrollCorner = Instance.new("UICorner")
+    ScrollCorner.CornerRadius = UDim.new(0, 5)
+    ScrollCorner.Parent = ScrollFrame
+
+    -- Refresh files function
+    local function refreshFileList()
+        local files = getSavedFiles()
+        ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, #files * 35) -- Baris lebih kecil
+        
+        -- Clear existing buttons
+        for _, child in ipairs(ScrollFrame:GetChildren()) do
+            if child:IsA("Frame") then
+                child:Destroy()
+            end
+        end
+        
+        -- Add file buttons
+        for i, filename in ipairs(files) do
+            local fileContainer = Instance.new("Frame")
+            fileContainer.Size = UDim2.new(1, -10, 0, 30) -- Container lebih kecil
+            fileContainer.Position = UDim2.new(0, 5, 0, (i-1)*35)
+            fileContainer.BackgroundColor3 = Colors.Background
+            fileContainer.Parent = ScrollFrame
+            
+            local ContainerCorner = Instance.new("UICorner")
+            ContainerCorner.CornerRadius = UDim.new(0, 4)
+            ContainerCorner.Parent = fileContainer
+            
+            local ContainerStroke = Instance.new("UIStroke")
+            ContainerStroke.Color = Color3.fromRGB(80, 80, 120)
+            ContainerStroke.Thickness = 1
+            ContainerStroke.Parent = fileContainer
+            
+            -- File name label (sekarang jadi button untuk load)
+            local fileBtn = Instance.new("TextButton")
+            fileBtn.Size = UDim2.new(0.6, 0, 1, 0)
+            fileBtn.Position = UDim2.new(0, 0, 0, 0)
+            fileBtn.BackgroundTransparency = 1
+            fileBtn.Text = "📁 " .. filename
+            fileBtn.TextColor3 = Colors.Text
+            fileBtn.Font = Enum.Font.Gotham
+            fileBtn.TextSize = 10
+            fileBtn.TextXAlignment = Enum.TextXAlignment.Left
+            fileBtn.Parent = fileContainer
+            
+            -- Load button kecil
+            local loadBtn = createModernButton(fileContainer, "📥", 
+                UDim2.new(0.62, 0, 0.1, 0), UDim2.new(0.15, 0, 0.8, 0), Colors.Success)
+            loadBtn.TextSize = 9
+            
+            -- Delete button
+            local deleteBtn = createModernButton(fileContainer, "🗑️", 
+                UDim2.new(0.80, 0, 0.1, 0), UDim2.new(0.15, 0, 0.8, 0), Colors.Danger)
+            deleteBtn.TextSize = 9
+            
+            -- File button click to load
+            fileBtn.MouseButton1Click:Connect(function()
+                local coordText, count = loadCoordinates(filename)
+                if coordText then
+                    CoordBox.Text = coordText
+                    ProgressText.Text = "Loaded: " .. filename .. " (" .. count .. " coordinates)"
+                    LoadFilesGUI:Destroy()
+                    LoadFilesGUI = nil
+                else
+                    ProgressText.Text = "Failed to load: " .. filename
+                end
+            end)
+            
+            -- Load button click
+            loadBtn.MouseButton1Click:Connect(function()
+                local coordText, count = loadCoordinates(filename)
+                if coordText then
+                    CoordBox.Text = coordText
+                    ProgressText.Text = "Loaded: " .. filename .. " (" .. count .. " coordinates)"
+                    LoadFilesGUI:Destroy()
+                    LoadFilesGUI = nil
+                else
+                    ProgressText.Text = "Failed to load: " .. filename
+                end
+            end)
+            
+            -- Delete button click
+            deleteBtn.MouseButton1Click:Connect(function()
+                if deleteSavedFile(filename) then
+                    refreshFileList()
+                    ProgressText.Text = "Deleted: " .. filename
+                else
+                    ProgressText.Text = "Failed to delete: " .. filename
+                end
+            end)
+        end
+        
+        -- No files message
+        if #files == 0 then
+            local noFilesLabel = Instance.new("TextLabel")
+            noFilesLabel.Size = UDim2.new(1, 0, 0, 30)
+            noFilesLabel.Position = UDim2.new(0, 0, 0, 0)
+            noFilesLabel.BackgroundTransparency = 1
+            noFilesLabel.Text = "No saved files found"
+            noFilesLabel.TextColor3 = Colors.DarkText
+            noFilesLabel.Font = Enum.Font.Gotham
+            noFilesLabel.TextSize = 10
+            noFilesLabel.Parent = ScrollFrame
+        end
+    end
+    
+    -- Refresh button
+    local RefreshBtn = createModernButton(Content, "🔄 REFRESH", 
+        UDim2.new(0, 0, 1, -30), UDim2.new(1, 0, 0, 25), Colors.Primary)
+    RefreshBtn.TextSize = 10
+    
+    RefreshBtn.MouseButton1Click:Connect(refreshFileList)
+    
+    -- Button functions
+    CloseBtn.MouseButton1Click:Connect(function()
+        LoadFilesGUI:Destroy()
+        LoadFilesGUI = nil
+    end)
+    
+    -- Make draggable
+    MainFrame.Active = true
+    MainFrame.Draggable = true
+    
+    -- Initial load
+    refreshFileList()
+end
+
+-- ========================
+-- ANIMATION FUNCTIONS
+-- ========================
+local function minimizeGUI()
+    local tweenInfo = TweenInfo.new(0.3, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    
+    -- Animate main GUI minimize
+    local scaleTween = TweenService:Create(MainContainer, tweenInfo, {
+        Size = UDim2.new(0, 0, 0, 0),
+        Position = UDim2.new(0, MainContainer.AbsolutePosition.X, 0, MainContainer.AbsolutePosition.Y)
+    })
+    
+    local transparencyTween = TweenService:Create(MainContainer, tweenInfo, {
+        BackgroundTransparency = 1
+    })
+    
+    scaleTween:Play()
+    transparencyTween:Play()
+    
+    scaleTween.Completed:Connect(function()
+        MainContainer.Visible = false
+        MiniFrame.Visible = true
+        
+        -- Reset main GUI size untuk nanti
+        MainContainer.Size = UDim2.new(0, 380, 0, 290)
+        MainContainer.BackgroundTransparency = 0.1
+    end)
+end
+
+local function unminimizeGUI()
+    MainContainer.Visible = true
+    MiniFrame.Visible = false
+    
+    local tweenInfo = TweenInfo.new(0.4, Enum.EasingStyle.Back, Enum.EasingDirection.Out)
+    
+    -- Simpan posisi mini frame untuk animasi
+    local startPos = UDim2.new(0, MiniFrame.AbsolutePosition.X, 0, MiniFrame.AbsolutePosition.Y)
+    MainContainer.Position = startPos
+    
+    -- Animate dari kecil ke besar
+    MainContainer.Size = UDim2.new(0, 0, 0, 0)
+    
+    local scaleTween = TweenService:Create(MainContainer, tweenInfo, {
+        Size = UDim2.new(0, 380, 0, 290)
+    })
+    
+    scaleTween:Play()
+end
+
+-- ========================
+-- TELEPORT FUNCTIONS - FINAL FIXED VERSION
+-- ========================
+local function updateProgress(current, total)
+    if total > 0 then
+        local percent = current / total
+        ProgressText.Text = string.format("Progress: %d/%d (%.1f%%)", current, total, percent * 100)
+        TweenService:Create(ProgressFill, TweenInfo.new(0.2), {Size = UDim2.new(percent, 0, 1, 0)}):Play()
+    else
+        ProgressText.Text = "Ready to teleport"
+        ProgressFill.Size = UDim2.new(0, 0, 1, 0)
+    end
+end
+
+local function parseCoords()
+    coords = {}
+    for line in CoordBox.Text:gmatch("[^\r\n]+") do
+        local x,y,z = line:match("([%-%d%.]+)%s*,%s*([%-%d%.]+)%s*,%s*([%-%d%.]+)")
+        if x and y and z then
+            table.insert(coords, Vector3.new(tonumber(x),tonumber(y),tonumber(z)))
+        end
+    end
+    updateProgress(0,#coords)
+end
+
+local function RespawnCharacter()
+    if LP and LP.Character then
+        local char = LP.Character
+        local humanoid = char:FindFirstChildOfClass("Humanoid")
+        if humanoid then humanoid.Health = 0 end
+        task.wait(1)
+        LP:LoadCharacter()
+    end
+end
+
+local function flyTo(targetPos)
+    local char = LP.Character
+    if not char then return false end
+    
+    local hrp = char:WaitForChild("HumanoidRootPart", 2)
+    local humanoid = char:FindFirstChildOfClass("Humanoid")
+    if not hrp or not humanoid then return false end
+
+    cleanupBodyVelocity()
+    enableNoclip()
+    humanoid.PlatformStand = true
+
+    local speed = tonumber(SpeedBox.Text) or 400
+    flySpeed = math.clamp(speed, 50, 1000)
+
+    currentBodyVelocity = Instance.new("BodyVelocity")
+    currentBodyVelocity.MaxForce = Vector3.new(1e5,1e5,1e5)
+    currentBodyVelocity.Velocity = Vector3.new(0,0,0)
+    currentBodyVelocity.Parent = hrp
+
+    local startTime = tick()
+    local maxFlyTime = 30
+
+    while running and tick() - startTime < maxFlyTime do
+        if not LP.Character or not LP.Character:FindFirstChild("HumanoidRootPart") then
+            break
+        end
+
+        local dir = targetPos - hrp.Position
+        local dist = dir.Magnitude
+        
+        if dist < 2 then break end
+        
+        local currentSpeed = math.min(flySpeed, dist * 6)
+        currentBodyVelocity.Velocity = dir.Unit * currentSpeed
+        
+        if humanoid.Health < humanoid.MaxHealth then
+            humanoid.Health = humanoid.MaxHealth
+        end
+        
+        task.wait()
+    end
+
+    cleanupBodyVelocity()
+    humanoid.PlatformStand = false
+    disableNoclip()
+    
+    return true
+end
+
+local function instantTeleport(targetPos)
+    local char = LP.Character
+    if not char then return false end
+    
+    local hrp = char:FindFirstChild("HumanoidRootPart")
+    if not hrp then return false end
+    
+    hrp.CFrame = CFrame.new(targetPos)
+    return true
+end
+
+local function teleportTo(targetPos)
+    if teleportMode == "fly" then
+        return flyTo(targetPos)
+    else
+        return instantTeleport(targetPos)
+    end
+end
+
+-- ========================
+-- FIXED PROCESS COORDINATES FUNCTION
+-- ========================
+local function processCoordinates()
+    if running then return end
+    
+    running = true
+    parseCoords()
+    
+    flyThread = task.spawn(function()
+        local shouldRepeat = true
+        
+        while running and shouldRepeat do
+            local currentIndex = 1
+            local totalCoords = #coords
+            
+            while running and currentIndex <= totalCoords do
+                local targetPos = coords[currentIndex]
+                
+                if teleportTo(targetPos) then
+                    updateProgress(currentIndex, totalCoords)
+                    
+                    local delayTime = tonumber(DelayBox.Text) or 1
+                    if delayTime > 0 then
+                        local delayStart = tick()
+                        while running and tick() - delayStart < delayTime do
+                            task.wait(0.1)
+                        end
+                    end
+                    
+                    currentIndex = currentIndex + 1
+                else
+                    task.wait(1)
+                end
+            end
+
+            -- FIXED: Check if we should repeat AFTER completing all coordinates
+            if running and totalCoords > 0 then
+                if respawnOn then
+                    ProgressText.Text = "Respawning..."
+                    task.wait(1)
+                    RespawnCharacter()
+                    task.wait(3) -- Tunggu respawn selesai
+                    
+                    -- Pastikan karakter sudah siap sebelum melanjutkan
+                    if LP.Character then
+                        LP.Character:WaitForChild("HumanoidRootPart", 5)
+                    end
+                end
+
+                -- FIXED: Only continue repeating if repeat mode is still on
+                if repeatOn and running then
+                    updateProgress(0, totalCoords)
+                    ProgressText.Text = "Repeating sequence..."
+                    task.wait(1) -- Beri jeda sebelum mengulang
+                    -- Loop akan mengulang dari awal
+                else
+                    shouldRepeat = false
+                end
+            else
+                shouldRepeat = false
+            end
+        end
+        
+        running = false
+        updateProgress(0, #coords)
+        ProgressText.Text = "Teleportation completed"
+    end)
+end
+
+local function pushUndo()
+    table.insert(undoStack, CoordBox.Text)
+    if #undoStack > 50 then table.remove(undoStack,1) end
+end
+
+-- ========================
+-- BUTTON LOGIC - FINAL FIXED VERSION
+-- ========================
+SaveBtn.MouseButton1Click:Connect(function()
+    if LP.Character and LP.Character:FindFirstChild("HumanoidRootPart") then
+        pushUndo()
+        local pos = LP.Character.HumanoidRootPart.Position
+        local newText = string.format("%s, %s, %s\n",
+            math.floor(pos.X*100)/100,
+            math.floor(pos.Y*100)/100,
+            math.floor(pos.Z*100)/100
+        )
+        CoordBox.Text = CoordBox.Text .. newText
+        redoStack = {}
+        
+        -- Auto scroll ke bawah setelah save
+        updateScrollSize()
+    end
+end)
+
+UndoBtn.MouseButton1Click:Connect(function()
+    if #undoStack > 0 then
+        table.insert(redoStack, CoordBox.Text)
+        CoordBox.Text = table.remove(undoStack)
+    end
+end)
+
+RedoBtn.MouseButton1Click:Connect(function()
+    if #redoStack > 0 then
+        table.insert(undoStack, CoordBox.Text)
+        CoordBox.Text = table.remove(redoStack)
+    end
+end)
+
+ClearBtn.MouseButton1Click:Connect(function()
+    pushUndo()
+    CoordBox.Text = ""
+end)
+
+ExampleBtn.MouseButton1Click:Connect(function()
+    pushUndo()
+    CoordBox.Text = "0, 0, 0\n50, 25, 30\n100, 50, 75\n-50, 10, -25\n200, 100, 150"
+end)
+
+-- Mode Toggle
+ModeToggle.MouseButton1Click:Connect(function()
+    if teleportMode == "fly" then
+        teleportMode = "instant"
+        ModeToggle.Text = "⚡ INSTANT"
+        ModeToggle.BackgroundColor3 = Colors.Secondary
+    else
+        teleportMode = "fly"
+        ModeToggle.Text = "🚀 FLY"
+        ModeToggle.BackgroundColor3 = Colors.Primary
+    end
+end)
+
+-- Repeat Button dengan status ON/OFF - FIXED
+RepeatBtn.MouseButton1Click:Connect(function()
+    repeatOn = not repeatOn
+    RepeatBtn.BackgroundColor3 = repeatOn and Colors.Success or Colors.Warning
+    RepeatBtn.Text = repeatOn and "🔄 REPEAT ON" or "🔄 REPEAT"
+end)
+
+-- Respawn Button dengan status ON/OFF - FIXED
+RespawnBtn.MouseButton1Click:Connect(function()
+    respawnOn = not respawnOn
+    RespawnBtn.BackgroundColor3 = respawnOn and Colors.Success or Colors.Danger
+    RespawnBtn.Text = respawnOn and "💀 RESPAWN ON" or "💀 RESPAWN"
+end)
+
+StartBtn.MouseButton1Click:Connect(function()
+    if not running then
+        processCoordinates()
+    end
+end)
+
+StopBtn.MouseButton1Click:Connect(function()
+    running = false
+    cleanupBodyVelocity()
+    disableNoclip()
+    
+    if LP.Character then
+        local humanoid = LP.Character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.PlatformStand = false
+        end
+    end
+end)
+
+-- TOMBOL BARU: Save File & Load File
+SaveFileBtn.MouseButton1Click:Connect(function()
+    -- Check if there are valid coordinates to save
+    if CoordBox.Text == "" or CoordBox.Text:gsub("%s", "") == "" then
+        ProgressText.Text = "No coordinates to save!"
+        return
+    end
+    
+    createSaveFileNameGUI()
+end)
+
+LoadFileBtn.MouseButton1Click:Connect(function()
+    createLoadFilesGUI()
+end)
+
+-- Minimize & Close Buttons dengan animasi
+MinBtn.MouseButton1Click:Connect(function()
+    minimizeGUI()
+end)
+
+CloseBtn.MouseButton1Click:Connect(function()
+    -- Animasi close lalu hancurkan
+    local tweenInfo = TweenInfo.new(0.2, Enum.EasingStyle.Quad, Enum.EasingDirection.Out)
+    
+    local scaleTween = TweenService:Create(MainContainer, tweenInfo, {
+        Size = UDim2.new(0, 0, 0, 0),
+        BackgroundTransparency = 1
+    })
+    
+    scaleTween:Play()
+    scaleTween.Completed:Connect(function()
+        ScreenGui:Destroy()
+    end)
+end)
+
+OpenBtn.MouseButton1Click:Connect(function()
+    unminimizeGUI()
+end)
+
+-- Character added event - FIXED untuk handle respawn + repeat
+LP.CharacterAdded:Connect(function(char)
+    task.spawn(function()
+        -- Tunggu karakter benar-benar siap
+        char:WaitForChild("HumanoidRootPart", 10)
+        local humanoid = char:WaitForChild("Humanoid", 5)
+        
+        -- Tunggu sedikit agar respawn stabil
+        task.wait(1.5)
+
+        -- Jika mode repeat dan respawn aktif, maka jalankan ulang teleport loop
+        if repeatOn and respawnOn then
+            running = false  -- pastikan flag di-reset
+            task.wait(0.5)
+            processCoordinates() -- mulai ulang dari awal
+        end
+    end)
+end)
+
+-- Initial setup
+updateProgress(0, 0)
+updateScrollSize()
