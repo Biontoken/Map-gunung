@@ -1,0 +1,791 @@
+local Player = game.Players.LocalPlayer
+local PlayerGui = Player:WaitForChild("PlayerGui")
+local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
+
+-- ScreenGui
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Parent = PlayerGui
+ScreenGui.Enabled = true
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Name = "AnimationMenu"
+
+-- Main Frame - DI TENGAH LAYAR
+local MainFrame = Instance.new("Frame")
+MainFrame.Size = UDim2.new(0, 300, 0, 320)
+MainFrame.Position = UDim2.new(0.5, -150, 0.5, -200)
+MainFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 20)
+MainFrame.BackgroundTransparency = 0.1
+MainFrame.Active = true
+MainFrame.Draggable = true
+MainFrame.ClipsDescendants = true
+MainFrame.Parent = ScreenGui
+
+local mainCorner = Instance.new("UICorner")
+mainCorner.CornerRadius = UDim.new(0, 12)
+mainCorner.Parent = MainFrame
+
+-- BORDER BIRU HANYA DI MENU UTAMA
+local mainBorder = Instance.new("UIStroke")
+mainBorder.Color = Color3.fromRGB(0, 150, 255)
+mainBorder.Thickness = 3
+mainBorder.Parent = MainFrame
+
+-- Gradient Background Biru-Hitam
+local uiGradient = Instance.new("UIGradient")
+uiGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 0, 0)),
+    ColorSequenceKeypoint.new(0.3, Color3.fromRGB(0, 40, 80)),
+    ColorSequenceKeypoint.new(0.7, Color3.fromRGB(0, 80, 160)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 0, 0))
+}
+uiGradient.Rotation = 45
+uiGradient.Parent = MainFrame
+
+-- Shadow Effect untuk 3D
+local shadow = Instance.new("ImageLabel")
+shadow.Name = "Shadow"
+shadow.Size = UDim2.new(1, 20, 1, 20)
+shadow.Position = UDim2.new(0, -10, 0, -10)
+shadow.BackgroundTransparency = 1
+shadow.Image = "rbxassetid://1316045217"
+shadow.ImageColor3 = Color3.fromRGB(0, 50, 100)
+shadow.ImageTransparency = 0.7
+shadow.ScaleType = Enum.ScaleType.Slice
+shadow.SliceCenter = Rect.new(10, 10, 118, 118)
+shadow.Parent = MainFrame
+shadow.ZIndex = -1
+
+-- Navbar
+local Navbar = Instance.new("Frame")
+Navbar.Size = UDim2.new(1, 0, 0, 50)
+Navbar.BackgroundColor3 = Color3.fromRGB(0, 0, 0)
+Navbar.BackgroundTransparency = 0.1
+Navbar.Parent = MainFrame
+
+local navCorner = Instance.new("UICorner")
+navCorner.CornerRadius = UDim.new(0, 12)
+navCorner.Parent = Navbar
+
+-- Navbar Gradient biru terang
+local navGradient = Instance.new("UIGradient")
+navGradient.Color = ColorSequence.new{
+    ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 120, 240)),
+    ColorSequenceKeypoint.new(0.5, Color3.fromRGB(0, 80, 180)),
+    ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 40, 100))
+}
+navGradient.Rotation = 90
+navGradient.Parent = Navbar
+
+-- Navbar Title - TULISAN PUTIH TERANG TANPA STROKE
+local TitleLabel = Instance.new("TextLabel")
+TitleLabel.Size = UDim2.new(1, -60, 1, 0)
+TitleLabel.Position = UDim2.new(0, 15, 0, 0)
+TitleLabel.BackgroundTransparency = 1
+TitleLabel.Text = "JSY ANIMASI"
+TitleLabel.Font = Enum.Font.GothamBlack
+TitleLabel.TextSize = 16
+TitleLabel.TextColor3 = Color3.fromRGB(255, 255, 255)
+TitleLabel.TextXAlignment = Enum.TextXAlignment.Left
+TitleLabel.Parent = Navbar
+
+-- Tombol Minimize - Biru terang
+local MinimizeBtn = Instance.new("TextButton")
+MinimizeBtn.Size = UDim2.new(0, 30, 0, 30)
+MinimizeBtn.Position = UDim2.new(0.95, -65, 0.5, -15)
+MinimizeBtn.BackgroundColor3 = Color3.fromRGB(0, 140, 255)
+MinimizeBtn.Text = "-"
+MinimizeBtn.Font = Enum.Font.GothamBold
+MinimizeBtn.TextSize = 18
+MinimizeBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+MinimizeBtn.Parent = Navbar
+
+local minimizeCorner = Instance.new("UICorner")
+minimizeCorner.CornerRadius = UDim.new(0, 6)
+minimizeCorner.Parent = MinimizeBtn
+
+-- X Button - Biru terang
+local CloseBtn = Instance.new("TextButton")
+CloseBtn.Size = UDim2.new(0, 30, 0, 30)
+CloseBtn.Position = UDim2.new(0.95, -30, 0.5, -15)
+CloseBtn.BackgroundColor3 = Color3.fromRGB(0, 140, 255)
+CloseBtn.Text = "X"
+CloseBtn.Font = Enum.Font.GothamBold
+CloseBtn.TextSize = 14
+CloseBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+CloseBtn.Parent = Navbar
+
+local closeCorner = Instance.new("UICorner")
+closeCorner.CornerRadius = UDim.new(0, 6)
+closeCorner.Parent = CloseBtn
+
+-- ScrollFrame
+local ScrollFrame = Instance.new("ScrollingFrame")
+ScrollFrame.Size = UDim2.new(1, -10, 1, -70)
+ScrollFrame.Position = UDim2.new(0, 5, 0, 60)
+ScrollFrame.BackgroundTransparency = 1
+ScrollFrame.ScrollBarThickness = 6
+ScrollFrame.ScrollBarImageColor3 = Color3.fromRGB(0, 140, 255)
+ScrollFrame.ScrollingDirection = Enum.ScrollingDirection.Y
+ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, 0)
+ScrollFrame.Parent = MainFrame
+
+local UIListLayout = Instance.new("UIListLayout")
+UIListLayout.Parent = ScrollFrame
+UIListLayout.Padding = UDim.new(0, 8)
+UIListLayout.HorizontalAlignment = Enum.HorizontalAlignment.Center
+UIListLayout.SortOrder = Enum.SortOrder.LayoutOrder
+UIListLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
+    ScrollFrame.CanvasSize = UDim2.new(0, 0, 0, UIListLayout.AbsoluteContentSize.Y + 10)
+end)
+
+-- Floating Mini GUI - Background hitam dengan border biru
+local MiniFrame = Instance.new("ImageButton") -- Ganti dari TextButton ke ImageButton
+MiniFrame.Size = UDim2.new(0, 45, 0, 45) -- Ukuran lebih besar untuk gambar
+MiniFrame.Position = UDim2.new(1, -70, 0, 10)
+MiniFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 30) -- Biru tua
+MiniFrame.BackgroundTransparency = 0.1
+MiniFrame.Image = "rbxassetid://110886372938101" -- GAMBAR YANG DIMINTA
+MiniFrame.ScaleType = Enum.ScaleType.Fit
+MiniFrame.Visible = false
+MiniFrame.Active = true
+MiniFrame.Draggable = true
+MiniFrame.Parent = ScreenGui
+
+local miniCorner = Instance.new("UICorner")
+miniCorner.CornerRadius = UDim.new(0, 12) -- Sudut membulat
+miniCorner.Parent = MiniFrame
+
+local miniStroke = Instance.new("UIStroke")
+miniStroke.Color = Color3.fromRGB(0, 191, 255) -- Biru
+miniStroke.Thickness = 1.5
+miniStroke.Parent = MiniFrame
+
+-- Logika close & reopen
+CloseBtn.MouseButton1Click:Connect(function()
+    ScreenGui:Destroy()
+end)
+
+MinimizeBtn.MouseButton1Click:Connect(function()
+    MainFrame.Visible = false
+    MiniFrame.Visible = true
+end)
+
+MiniFrame.MouseButton1Click:Connect(function()
+    MainFrame.Visible = true
+    MiniFrame.Visible = false
+end)
+
+-- =================== SISTEM ANIMASI YANG DIPERBAIKI ===================
+local AnimationData = {
+     ["Retro"] = {
+        idle1 = "http://www.roblox.com/asset/?id=10921258489",
+        idle2 = "http://www.roblox.com/asset/?id=10921259953",
+        walk = "http://www.roblox.com/asset/?id=10921269718",
+        run = "http://www.roblox.com/asset/?id=10921261968",
+        jump = "http://www.roblox.com/asset/?id=10921263860",
+        climb = "http://www.roblox.com/asset/?id=10921257536",
+        fall = "http://www.roblox.com/asset/?id=10921262864"
+    },
+    ["Komunitas Adidas"] = {
+        idle1 = "rbxassetid://122257458498464",
+        idle2 = "rbxassetid://102357151005774",
+        walk = "rbxassetid://122150855457006",
+        run = "rbxassetid://82598234841035",
+        jump = "rbxassetid://75290611992385",
+        climb = "rbxassetid://88763136693023",
+        fall = "rbxassetid://98600215928904"
+    },
+    ["Catwalk Glam"] = {
+        idle1 = "http://www.roblox.com/asset/?id=133806214992291",
+        idle2 = "http://www.roblox.com/asset/?id=94970088341563",
+        walk = "http://www.roblox.com/asset/?id=109168724482748",
+        run = "http://www.roblox.com/asset/?id=81024476153754",
+        jump = "http://www.roblox.com/asset/?id=116936326516985",
+        climb = "http://www.roblox.com/asset/?id=119377220967554",
+        fall = "http://www.roblox.com/asset/?id=92294537340807"
+    },
+    ["Penjahat Populer"] = {
+        idle1 = "http://www.roblox.com/asset/?id=118832222982049",
+        idle2 = "http://www.roblox.com/asset/?id=76049494037641",
+        walk = "http://www.roblox.com/asset/?id=92072849924640",
+        run = "http://www.roblox.com/asset/?id=72301599441680",
+        jump = "http://www.roblox.com/asset/?id=104325245285198",
+        climb = "http://www.roblox.com/asset/?id=131326830509784",
+        fall = "http://www.roblox.com/asset/?id=121152442762481"
+    },
+    ["NFL"] = {
+        idle1 = "http://www.roblox.com/asset/?id=92080889861410",
+        idle2 = "http://www.roblox.com/asset/?id=74451233229259",
+        walk = "http://www.roblox.com/asset/?id=110358958299415",
+        run = "http://www.roblox.com/asset/?id=117333533048078",
+        jump = "http://www.roblox.com/asset/?id=119846112151352",
+        climb = "http://www.roblox.com/asset/?id=134630013742019",
+        fall = "http://www.roblox.com/asset/?id=129773241321032"
+    },
+    ["Tidak Ada Batas"] = {
+        idle1 = "http://www.roblox.com/asset/?id=92080889861410",
+        idle2 = "http://www.roblox.com/asset/?id=74451233229259",
+        walk = "http://www.roblox.com/asset/?id=110358958299415",
+        run = "http://www.roblox.com/asset/?id=117333533048078",
+        jump = "http://www.roblox.com/asset/?id=119846112151352",
+        climb = "http://www.roblox.com/asset/?id=134630013742019",
+        fall = "http://www.roblox.com/asset/?id=129773241321032"
+    },
+    ["Olahraga Adidas"] = {
+        idle1 = "http://www.roblox.com/asset/?id=18537376492",
+        idle2 = "http://www.roblox.com/asset/?id=18537371272",
+        walk = "http://www.roblox.com/asset/?id=18537392113",
+        run = "http://www.roblox.com/asset/?id=18537384940",
+        jump = "http://www.roblox.com/asset/?id=18537380791",
+        climb = "http://www.roblox.com/asset/?id=18537363391",
+        fall = "http://www.roblox.com/asset/?id=18537367238"
+    },
+    ["Tebal oleh E.L.F"] = {
+        idle1 = "http://www.roblox.com/asset/?id=16738333868",
+        idle2 = "http://www.roblox.com/asset/?id=16738334710",
+        walk = "http://www.roblox.com/asset/?id=16738340646",
+        run = "http://www.roblox.com/asset/?id=16738337225",
+        jump = "http://www.roblox.com/asset/?id=16738336650",
+        climb = "http://www.roblox.com/asset/?id=16738332169",
+        fall = "http://www.roblox.com/asset/?id=16738333171"
+    },
+    ["Bergaya"] = {
+        idle1 = "http://www.roblox.com/asset/?id=10921272275",
+        idle2 = "http://www.roblox.com/asset/?id=10921273958",
+        walk = "http://www.roblox.com/asset/?id=10921283326",
+        run = "http://www.roblox.com/asset/?id=10921276116",
+        jump = "http://www.roblox.com/asset/?id=10921279832",
+        climb = "http://www.roblox.com/asset/?id=10921271391",
+        fall = "http://www.roblox.com/asset/?id=10921278648"
+    },
+    ["Sekolah Tua"] = {
+        idle1 = "http://www.roblox.com/asset/?id=10921230744",
+        idle2 = "http://www.roblox.com/asset/?id=10921232093",
+        walk = "http://www.roblox.com/asset/?id=10921244891",
+        run = "http://www.roblox.com/asset/?id=10921240218",
+        jump = "http://www.roblox.com/asset/?id=10921242013",
+        climb = "http://www.roblox.com/asset/?id=10921229866",
+        fall = "http://www.roblox.com/asset/?id=10921241244"
+    },
+    ["Vampire"] = {
+        idle1 = "http://www.roblox.com/asset/?id=10921315373",
+        idle2 = "http://www.roblox.com/asset/?id=10921316709",
+        walk = "http://www.roblox.com/asset/?id=10921326949",
+        run = "http://www.roblox.com/asset/?id=10921320299",
+        jump = "http://www.roblox.com/asset/?id=10921322186",
+        climb = "http://www.roblox.com/asset/?id=10921314188",
+        fall = "http://www.roblox.com/asset/?id=10921321317"
+    },
+    ["Superhero"] = {
+        idle1 = "http://www.roblox.com/asset/?id=10921315373",
+        idle2 = "http://www.roblox.com/asset/?id=10921316709",
+        walk = "http://www.roblox.com/asset/?id=10921326949",
+        run = "http://www.roblox.com/asset/?id=10921320299",
+        jump = "http://www.roblox.com/asset/?id=10921322186",
+        climb = "http://www.roblox.com/asset/?id=10921314188",
+        fall = "http://www.roblox.com/asset/?id=10921321317"
+    },
+    ["Ninja"] = {
+        idle1 = "http://www.roblox.com/asset/?id=10921155160",
+        idle2 = "http://www.roblox.com/asset/?id=10921155867",
+        walk = "http://www.roblox.com/asset/?id=10921162768",
+        run = "http://www.roblox.com/asset/?id=10921157929",
+        jump = "http://www.roblox.com/asset/?id=10921160088",
+        climb = "http://www.roblox.com/asset/?id=10921154678",
+        fall = "http://www.roblox.com/asset/?id=10921159222"
+    },
+    ["Bubby"] = {
+        idle1 = "http://www.roblox.com/asset/?id=10921155160",
+        idle2 = "http://www.roblox.com/asset/?id=10921155867",
+        walk = "http://www.roblox.com/asset/?id=10921162768",
+        run = "http://www.roblox.com/asset/?id=10921157929",
+        jump = "http://www.roblox.com/asset/?id=10921160088",
+        climb = "http://www.roblox.com/asset/?id=10921154678",
+        fall = "http://www.roblox.com/asset/?id=10921159222"
+    },
+    ["Cartoon"] = {
+        idle1 = "http://www.roblox.com/asset/?id=10921071918",
+        idle2 = "http://www.roblox.com/asset/?id=10921072875",
+        walk = "http://www.roblox.com/asset/?id=10921082452",
+        run = "http://www.roblox.com/asset/?id=10921076136",
+        jump = "http://www.roblox.com/asset/?id=10921078135",
+        climb = "http://www.roblox.com/asset/?id=10921070953",
+        fall = "http://www.roblox.com/asset/?id=10921077030"
+    },
+    ["Zombie"] = {
+        idle1 = "http://www.roblox.com/asset/?id=10921344533",
+        idle2 = "http://www.roblox.com/asset/?id=10921345304",
+        walk = "http://www.roblox.com/asset/?id=10921355261",
+        run = "http://www.roblox.com/asset/?id=616163682",
+        jump = "http://www.roblox.com/asset/?id=10921351278",
+        climb = "http://www.roblox.com/asset/?id=10921343576",
+        fall = "http://www.roblox.com/asset/?id=10921350320"
+    },
+    ["Penyihir"] = {
+        idle1 = "http://www.roblox.com/asset/?id=10921144709",
+        idle2 = "http://www.roblox.com/asset/?id=10921145797",
+        walk = "http://www.roblox.com/asset/?id=10921152678",
+        run = "http://www.roblox.com/asset/?id=10921148209",
+        jump = "http://www.roblox.com/asset/?id=10921149743",
+        climb = "http://www.roblox.com/asset/?id=10921143404",
+        fall = "http://www.roblox.com/asset/?id=10921148939"
+    },
+    ["Robot"] = {
+        idle1 = "http://www.roblox.com/asset/?id=10921248039",
+        idle2 = "http://www.roblox.com/asset/?id=10921248831",
+        walk = "http://www.roblox.com/asset/?id=10921255446",
+        run = "http://www.roblox.com/asset/?id=10921250460",
+        jump = "http://www.roblox.com/asset/?id=10921252123",
+        climb = "http://www.roblox.com/asset/?id=10921247141",
+        fall = "http://www.roblox.com/asset/?id=10921251156"
+    },
+    ["Mainan"] = {
+        idle1 = "http://www.roblox.com/asset/?id=10921301576",
+        idle2 = "http://www.roblox.com/asset/?id=10921302207",
+        walk = "http://www.roblox.com/asset/?id=10921312010",
+        run = "http://www.roblox.com/asset/?id=10921306285",
+        jump = "http://www.roblox.com/asset/?id=10921308158",
+        climb = "http://www.roblox.com/asset/?id=10921300839",
+        fall = "http://www.roblox.com/asset/?id=10921307241"
+    },
+    ["Penatua"] = {
+        idle1 = "http://www.roblox.com/asset/?id=10921101664",
+        idle2 = "http://www.roblox.com/asset/?id=10921102574",
+        walk = "http://www.roblox.com/asset/?id=10921111375",
+        run = "http://www.roblox.com/asset/?id=10921104374",
+        jump = "http://www.roblox.com/asset/?id=10921107367",
+        climb = "http://www.roblox.com/asset/?id=10921100400",
+        fall = "http://www.roblox.com/asset/?id=10921105765"
+    },
+    ["Levitasi"] = {
+        idle1 = "http://www.roblox.com/asset/?id=10921132962",
+        idle2 = "http://www.roblox.com/asset/?id=10921133721",
+        walk = "http://www.roblox.com/asset/?id=10921140719",
+        run = "http://www.roblox.com/asset/?id=10921135644",
+        jump = "http://www.roblox.com/asset/?id=10921137402",
+        climb = "http://www.roblox.com/asset/?id=10921132092",
+        fall = "http://www.roblox.com/asset/?id=10921136539"
+    },
+    ["Astronaut"] = {
+        idle1 = "http://www.roblox.com/asset/?id=10921034824",
+        idle2 = "http://www.roblox.com/asset/?id=10921036806",
+        walk = "http://www.roblox.com/asset/?id=10921046031",
+        run = "http://www.roblox.com/asset/?id=10921039308",
+        jump = "http://www.roblox.com/asset/?id=10921042494",
+        climb = "http://www.roblox.com/asset/?id=10921032124",
+        fall = "http://www.roblox.com/asset/?id=10921040576"
+    },
+    ["Manusia Serigala"] = {
+        idle1 = "http://www.roblox.com/asset/?id=10921330408",
+        idle2 = "http://www.roblox.com/asset/?id=10921333667",
+        walk = "http://www.roblox.com/asset/?id=10921342074",
+        run = "http://www.roblox.com/asset/?id=10921336997",
+        jump = "http://www.roblox.com/asset/?id=1083218792",
+        climb = "http://www.roblox.com/asset/?id=10921329322",
+        fall = "http://www.roblox.com/asset/?id=10921337907"
+    },
+    ["Ksatria"] = {
+        idle1 = "http://www.roblox.com/asset/?id=10921117521",
+        idle2 = "http://www.roblox.com/asset/?id=10921118894",
+        walk = "http://www.roblox.com/asset/?id=10921127095",
+        run = "http://www.roblox.com/asset/?id=10921121197",
+        jump = "http://www.roblox.com/asset/?id=10921123517",
+        climb = "http://www.roblox.com/asset/?id=10921116196",
+        fall = "http://www.roblox.com/asset/?id=10921122579"
+    },
+    ["Bajak Laut"] = {
+        idle1 = "http://www.roblox.com/asset/?id=750781874",
+        idle2 = "http://www.roblox.com/asset/?id=750782770",
+        walk = "http://www.roblox.com/asset/?id=750785693",
+        run = "http://www.roblox.com/asset/?id=750783738",
+        jump = "http://www.roblox.com/asset/?id=750782230",
+        climb = "http://www.roblox.com/asset/?id=750779899",
+        fall = "http://www.roblox.com/asset/?id=750780242"
+    },
+    ["Percaya Diri"] = {
+        idle1 = "http://www.roblox.com/asset/?id=1069977950",
+        idle2 = "http://www.roblox.com/asset/?id=1069987858",
+        walk = "http://www.roblox.com/asset/?id=1070017263",
+        run = "http://www.roblox.com/asset/?id=1070001516",
+        jump = "http://www.roblox.com/asset/?id=1069984524",
+        climb = "http://www.roblox.com/asset/?id=1069946257",
+        fall = "http://www.roblox.com/asset/?id=1069973677"
+    },
+    ["Popstar"] = {
+        idle1 = "http://www.roblox.com/asset/?id=1212900985",
+        idle2 = "http://www.roblox.com/asset/?id=1212954651",
+        walk = "http://www.roblox.com/asset/?id=1212980338",
+        run = "http://www.roblox.com/asset/?id=1212980348",
+        jump = "http://www.roblox.com/asset/?id=1212954642",
+        climb = "http://www.roblox.com/asset/?id=1213044953",
+        fall = "http://www.roblox.com/asset/?id=1212900995"
+    },
+    ["Patrol"] = {
+        idle1 = "http://www.roblox.com/asset/?id=1149612882",
+        idle2 = "http://www.roblox.com/asset/?id=1150842221",
+        walk = "http://www.roblox.com/asset/?id=1151231493",
+        run = "http://www.roblox.com/asset/?id=1150967949",
+        jump = "http://www.roblox.com/asset/?id=1150944216",
+        climb = "http://www.roblox.com/asset/?id=1148811837",
+        fall = "http://www.roblox.com/asset/?id=1148863382"
+    },
+    ["Sneaky"] = {
+        idle1 = "http://www.roblox.com/asset/?id=1132473842",
+        idle2 = "http://www.roblox.com/asset/?id=1132477671",
+        walk = "http://www.roblox.com/asset/?id=1132510133",
+        run = "http://www.roblox.com/asset/?id=1132494274",
+        jump = "http://www.roblox.com/asset/?id=1132489853",
+        climb = "http://www.roblox.com/asset/?id=1132461372",
+        fall = "http://www.roblox.com/asset/?id=1132469004"
+    },
+    ["Putri"] = {
+        idle1 = "http://www.roblox.com/asset/?id=941003647",
+        idle2 = "http://www.roblox.com/asset/?id=941013098",
+        walk = "http://www.roblox.com/asset/?id=941028902",
+        run = "http://www.roblox.com/asset/?id=941015281",
+        jump = "http://www.roblox.com/asset/?id=941008832",
+        climb = "http://www.roblox.com/asset/?id=940996062",
+        fall = "http://www.roblox.com/asset/?id=941000007"
+    },
+    ["Cowboy"] = {
+        idle1 = "http://www.roblox.com/asset/?id=1014390418",
+        idle2 = "http://www.roblox.com/asset/?id=1014398616",
+        walk = "http://www.roblox.com/asset/?id=1014421541",
+        run = "http://www.roblox.com/asset/?id=1014401683",
+        jump = "http://www.roblox.com/asset/?id=1014394726",
+        climb = "http://www.roblox.com/asset/?id=1014380606",
+        fall = "http://www.roblox.com/asset/?id=1014384571"
+    },
+    ["Wanita Berkilau"] = {
+        idle1 = "http://www.roblox.com/asset/?id=4708191566",
+        idle2 = "http://www.roblox.com/asset/?id=4708192150",
+        walk = "http://www.roblox.com/asset/?id=4708193840",
+        run = "http://www.roblox.com/asset/?id=4708192705",
+        jump = "http://www.roblox.com/asset/?id=4708188025",
+        climb = "http://www.roblox.com/asset/?id=4708184253",
+        fall = "http://www.roblox.com/asset/?id=4708186162"
+    },
+    ["Tuan Toilet"] = {
+        idle1 = "http://www.roblox.com/asset/?id=4417977954",
+        idle2 = "http://www.roblox.com/asset/?id=4417978624",
+        walk = "http://www.roblox.com/asset/?id=4708193840",
+        run = "http://www.roblox.com/asset/?id=4417979645",
+        jump = "http://www.roblox.com/asset/?id=4708188025",
+        climb = "http://www.roblox.com/asset/?id=4708184253",
+        fall = "http://www.roblox.com/asset/?id=4708186162"
+    },
+    ["Ud'zal"] = {
+        idle1 = "rbxassetid://3303162274",
+        idle2 = "rbxassetid://3303162549",
+        walk = "http://www.roblox.com/asset/?id=3303162967",
+        run = "http://www.roblox.com/asset/?id=3236836670",
+        jump = "http://www.roblox.com/asset/?id=4708188025",
+        climb = "http://www.roblox.com/asset/?id=4708184253",
+        fall = "http://www.roblox.com/asset/?id=4708186162"
+    },
+    ["Beroco Sang Penakluk"] = {
+        idle1 = "rbxassetid://3293641938",
+        idle2 = "rbxassetid://3293642554",
+        walk = "http://www.roblox.com/asset/?id=10921269718",
+        run = "http://www.roblox.com/asset/?id=3236836670",
+        jump = "http://www.roblox.com/asset/?id=4708188025",
+        climb = "http://www.roblox.com/asset/?id=4708184253",
+        fall = "http://www.roblox.com/asset/?id=4708186162"
+    },
+    ["Fortnite"] = {
+        run = "rbxassetid://125360591416112",
+        jump = "rbxassetid://87095921006303",
+    }
+}
+
+local currentAnimation = nil
+local activeButton = nil
+
+-- Fungsi untuk mendapatkan folder Animate
+local function getAnimateFolder(character)
+    if not character then
+        return nil
+    end
+    
+    local humanoid = character:FindFirstChildOfClass("Humanoid")
+    if not humanoid then
+        wait(0.5)
+        humanoid = character:FindFirstChildOfClass("Humanoid")
+        if not humanoid then
+            return nil
+        end
+    end
+    
+    local animate = humanoid:FindFirstChild("Animate")
+    if not animate then
+        animate = character:FindFirstChild("Animate")
+    end
+    
+    if not animate then
+        animate = Instance.new("Folder")
+        animate.Name = "Animate"
+        animate.Parent = humanoid
+        
+        local animateScript = Instance.new("Script")
+        animateScript.Name = "Animate"
+        animateScript.Source = [[
+            local Figure = script.Parent.Parent
+            local Torso = Figure:WaitForChild("Torso")
+            local RightShoulder = Torso:WaitForChild("Right Shoulder")
+            local LeftShoulder = Torso:WaitForChild("Left Shoulder")
+            local RightHip = Torso:WaitForChild("Right Hip")
+            local LeftHip = Torso:WaitForChild("Left Hip")
+            local Neck = Torso:WaitForChild("Neck")
+            local Humanoid = Figure:WaitForChild("Humanoid")
+            local pose = "Standing"
+            
+            function createAnimation(id)
+                local animation = Instance.new("Animation")
+                animation.AnimationId = id
+                return animation
+            end
+            
+            script.Parent.Animate.Disabled = false
+        ]]
+        animateScript.Parent = animate
+    end
+    
+    return animate
+end
+
+-- Fungsi untuk menerapkan animasi
+local function applyAnimation(animate, animationData)
+    if not animate then
+        return false
+    end
+    
+    local success = true
+    
+    local function setAnimation(part, animationId)
+        if part and part:IsA("Animation") then
+            pcall(function()
+                part.AnimationId = animationId
+            end)
+        end
+    end
+    
+    if animate.idle then
+        setAnimation(animate.idle.Animation1, animationData.idle1)
+        setAnimation(animate.idle.Animation2, animationData.idle2)
+    end
+    
+    if animate.walk then
+        if animate.walk.WalkAnim then
+            setAnimation(animate.walk.WalkAnim, animationData.walk)
+        elseif animate.walk.walk then
+            setAnimation(animate.walk.walk, animationData.walk)
+        end
+    end
+    
+    if animate.run then
+        if animate.run.RunAnim then
+            setAnimation(animate.run.RunAnim, animationData.run)
+        elseif animate.run.run then
+            setAnimation(animate.run.run, animationData.run)
+        elseif animate.run.Animation then
+            setAnimation(animate.run.Animation, animationData.run)
+        end
+    end
+    
+    if animate.jump then
+        if animate.jump.JumpAnim then
+            setAnimation(animate.jump.JumpAnim, animationData.jump)
+        elseif animate.jump.jump then
+            setAnimation(animate.jump.jump, animationData.jump)
+        end
+    end
+    
+    if animate.climb and animate.climb.ClimbAnim then
+        setAnimation(animate.climb.ClimbAnim, animationData.climb)
+    end
+    
+    if animate.fall then
+        if animate.fall.FallAnim then
+            setAnimation(animate.fall.FallAnim, animationData.fall)
+        elseif animate.fall.fall then
+            setAnimation(animate.fall.fall, animationData.fall)
+        end
+    end
+    
+    return success
+end
+
+-- Fungsi untuk reset tombol ke state normal
+local function resetButtonToNormal(buttonContainer)
+    if buttonContainer and buttonContainer:FindFirstChild("Button") then
+        local button = buttonContainer.Button
+        local buttonGradient = button:FindFirstChildOfClass("UIGradient")
+        
+        if buttonGradient then
+            buttonGradient.Enabled = true
+        end
+        
+        TweenService:Create(button, TweenInfo.new(0.3), {
+            BackgroundColor3 = Color3.fromRGB(0, 100, 200)
+        }):Play()
+        
+        TweenService:Create(button, TweenInfo.new(0.3), {
+            TextColor3 = Color3.fromRGB(255, 255, 255)
+        }):Play()
+        
+        TweenService:Create(buttonGradient, TweenInfo.new(0.3), {
+            Rotation = 90
+        }):Play()
+    end
+end
+
+-- Fungsi untuk menerapkan animasi ke karakter
+local function applyCurrentAnimationToCharacter(character)
+    if currentAnimation and AnimationData[currentAnimation] then
+        local animate = getAnimateFolder(character)
+        if animate then
+            applyAnimation(animate, AnimationData[currentAnimation])
+        end
+    end
+end
+
+-- Event listener untuk karakter yang di-respawn
+Player.CharacterAdded:Connect(function(character)
+    character:WaitForChild("Humanoid")
+    applyCurrentAnimationToCharacter(character)
+    
+    if not ScreenGui or not ScreenGui.Parent then
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/your-repo/animation-menu/main/script.lua"))()
+    end
+end)
+
+-- Fungsi untuk membuat tombol animasi
+local function createAnimationButton(animationName, animationData)
+    local buttonContainer = Instance.new("Frame")
+    buttonContainer.Name = animationName
+    buttonContainer.Size = UDim2.new(0.9, 0, 0, 45)
+    buttonContainer.BackgroundTransparency = 1
+    buttonContainer.Parent = ScrollFrame
+
+    local button = Instance.new("TextButton")
+    button.Name = "Button"
+    button.Size = UDim2.new(1, 0, 1, 0)
+    button.Position = UDim2.new(0, 0, 0, 0)
+    button.BackgroundColor3 = Color3.fromRGB(0, 100, 200)
+    button.Text = animationName
+    button.TextColor3 = Color3.fromRGB(255, 255, 255)
+    button.TextSize = 12
+    button.Font = Enum.Font.GothamMedium
+    button.AutoButtonColor = false
+    button.Parent = buttonContainer
+    
+    local buttonCorner = Instance.new("UICorner")
+    buttonCorner.CornerRadius = UDim.new(0, 8)
+    buttonCorner.Parent = button
+    
+    -- GRADIENT untuk tombol
+    local buttonGradient = Instance.new("UIGradient")
+    buttonGradient.Color = ColorSequence.new({
+        ColorSequenceKeypoint.new(0, Color3.fromRGB(0, 80, 180)),
+        ColorSequenceKeypoint.new(0.3, Color3.fromRGB(0, 140, 255)),
+        ColorSequenceKeypoint.new(0.7, Color3.fromRGB(0, 140, 255)),
+        ColorSequenceKeypoint.new(1, Color3.fromRGB(0, 80, 180))
+    })
+    buttonGradient.Rotation = 90
+    buttonGradient.Parent = button
+    
+    -- Shadow untuk efek 3D
+    local buttonShadow = Instance.new("ImageLabel")
+    buttonShadow.Name = "ButtonShadow"
+    buttonShadow.Size = UDim2.new(1, 8, 1, 8)
+    buttonShadow.Position = UDim2.new(0, -4, 0, -4)
+    buttonShadow.BackgroundTransparency = 1
+    buttonShadow.Image = "rbxassetid://1316045217"
+    buttonShadow.ImageColor3 = Color3.fromRGB(0, 90, 180)
+    buttonShadow.ImageTransparency = 0.7
+    buttonShadow.ScaleType = Enum.ScaleType.Slice
+    buttonShadow.SliceCenter = Rect.new(10, 10, 118, 118)
+    buttonShadow.Parent = button
+    buttonShadow.ZIndex = -1
+
+    -- Efek hover
+    button.MouseEnter:Connect(function()
+        if activeButton ~= buttonContainer then
+            TweenService:Create(button, TweenInfo.new(0.2), {
+                BackgroundColor3 = Color3.fromRGB(0, 120, 240)
+            }):Play()
+            TweenService:Create(buttonGradient, TweenInfo.new(0.2), {
+                Rotation = 45
+            }):Play()
+        end
+    end)
+    
+    button.MouseLeave:Connect(function()
+        if activeButton ~= buttonContainer then
+            TweenService:Create(button, TweenInfo.new(0.2), {
+                BackgroundColor3 = Color3.fromRGB(0, 100, 200)
+            }):Play()
+            TweenService:Create(buttonGradient, TweenInfo.new(0.2), {
+                Rotation = 90
+            }):Play()
+        end
+    end)
+
+    -- Fungsi ketika tombol ditekan
+    button.MouseButton1Click:Connect(function()
+        if activeButton == buttonContainer then
+            return
+        end
+        
+        local character = Player.Character
+        if not character then
+            character = Player.CharacterAdded:Wait()
+            wait(0.5)
+        end
+        
+        local animate = getAnimateFolder(character)
+        
+        if animate then
+            local success = applyAnimation(animate, animationData)
+            
+            if success then
+                if activeButton then
+                    resetButtonToNormal(activeButton)
+                end
+                
+                currentAnimation = animationName
+                activeButton = buttonContainer
+                
+                buttonGradient.Enabled = false
+                
+                TweenService:Create(button, TweenInfo.new(0.3), {
+                    BackgroundColor3 = Color3.fromRGB(0, 180, 255)
+                }):Play()
+                
+                TweenService:Create(button, TweenInfo.new(0.3), {
+                    TextColor3 = Color3.fromRGB(255, 255, 255)
+                }):Play()
+                
+                TweenService:Create(button, TweenInfo.new(0.1), {
+                    Size = UDim2.new(1, -4, 1, -4),
+                    Position = UDim2.new(0, 2, 0, 2)
+                }):Play()
+                
+                wait(0.1)
+                TweenService:Create(button, TweenInfo.new(0.2), {
+                    Size = UDim2.new(1, 0, 1, 0),
+                    Position = UDim2.new(0, 0, 0, 0)
+                }):Play()
+            end
+        end
+    end)
+
+    return buttonContainer
+end
+
+-- Buat tombol untuk setiap animasi
+for animationName, data in pairs(AnimationData) do
+    local button = createAnimationButton(animationName, data)
+    button.Parent = ScrollFrame
+end
