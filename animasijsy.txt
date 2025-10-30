@@ -142,7 +142,7 @@ end)
 -- Floating Mini GUI - Background hitam dengan border biru
 local MiniFrame = Instance.new("ImageButton") -- Ganti dari TextButton ke ImageButton
 MiniFrame.Size = UDim2.new(0, 45, 0, 45) -- Ukuran lebih besar untuk gambar
-MiniFrame.Position = UDim2.new(1, -70, 0, 10)
+MiniFrame.Position = UDim2.new(1, -70, 0, 20)
 MiniFrame.BackgroundColor3 = Color3.fromRGB(10, 10, 30) -- Biru tua
 MiniFrame.BackgroundTransparency = 0.1
 MiniFrame.Image = "rbxassetid://110886372938101" -- GAMBAR YANG DIMINTA
@@ -788,4 +788,5 @@ end
 for animationName, data in pairs(AnimationData) do
     local button = createAnimationButton(animationName, data)
     button.Parent = ScrollFrame
+
 end
