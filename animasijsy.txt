@@ -493,9 +493,6 @@ local AnimationData = {
         climb = "http://www.roblox.com/asset/?id=4708184253",
         fall = "http://www.roblox.com/asset/?id=4708186162"
     },
-    ["Fortnite"] = {
-        run = "rbxassetid://125360591416112",
-        jump = "rbxassetid://87095921006303",
     }
 }
 
@@ -790,4 +787,5 @@ for animationName, data in pairs(AnimationData) do
     button.Parent = ScrollFrame
 
 end
+
 
