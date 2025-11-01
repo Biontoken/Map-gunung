@@ -1,10 +1,17 @@
+  --[[ 
+  JSY Spectate Final - REARRANGED (Clean Right Side Buttons)
+  3D HD Blue & Black Theme - Clean Layout with Freeze Character
+--]]
+
+-- Services
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
-local TweenService = game:GetService("TweenService")
+local Workspace = game:GetService("Workspace")
 local UserInputService = game:GetService("UserInputService")
+local TweenService = game:GetService("TweenService")
 
 local LP = Players.LocalPlayer
-local Cam = workspace.CurrentCamera
+local Cam = Workspace.CurrentCamera
 
 -- State
 local Active = true
@@ -20,206 +27,579 @@ local FollowActive = false
 local FollowConnection = nil
 local FollowAnim = nil
 
--- GUI Constants
+-- NEW: Send Part persistent state
+local SendPartActive = false
+local SendPartLoopThread = nil
+
+-- FREEZE State
+local FreezeConnection = nil
+local OriginalWalkSpeed = 16
+local OriginalJumpPower = 50
+
+-- Network stabilizer placeholder (best-effort)
+local NetworkConnection = nil
+
+-- 3D HD Colors - Blue & Black Theme
 local COLORS = {
-    BLUE = Color3.fromRGB(0, 170, 255),
-    GREEN = Color3.fromRGB(0, 200, 80),
-    RED = Color3.fromRGB(255, 70, 70),
+    DARK_BLUE = Color3.fromRGB(0, 40, 85),
+    MEDIUM_BLUE = Color3.fromRGB(0, 80, 160),
+    LIGHT_BLUE = Color3.fromRGB(0, 170, 255),
+    NEON_BLUE = Color3.fromRGB(0, 200, 255),
+    DARK_BLACK = Color3.fromRGB(5, 5, 10),
+    MEDIUM_BLACK = Color3.fromRGB(15, 15, 20),
+    LIGHT_BLACK = Color3.fromRGB(25, 25, 35),
     WHITE = Color3.fromRGB(255, 255, 255),
-    BLACK = Color3.fromRGB(0, 0, 0),
-    LIGHT_GRAY = Color3.fromRGB(200, 200, 200)
+    GREEN = Color3.fromRGB(0, 255, 128),
+    RED = Color3.fromRGB(255, 60, 60),
+    GOLD = Color3.fromRGB(255, 215, 0)
 }
 
--- References to local character parts
+-- Character refs
 local humanoid, rootPart
-
 local function refreshCharacterRefs()
     local char = LP.Character
     if char then
         humanoid = char:FindFirstChildOfClass("Humanoid")
         rootPart = char:FindFirstChild("HumanoidRootPart")
+        
+        -- Save original movement properties
+        if humanoid then
+            OriginalWalkSpeed = humanoid.WalkSpeed
+            OriginalJumpPower = humanoid.JumpPower
+        end
     else
         humanoid = nil
         rootPart = nil
     end
 end
-
 refreshCharacterRefs()
 
 LP.CharacterAdded:Connect(function(char)
-    char:WaitForChild("Humanoid", 5)
-    char:WaitForChild("HumanoidRootPart", 5)
+    pcall(function()
+        char:WaitForChild("Humanoid", 5)
+        char:WaitForChild("HumanoidRootPart", 5)
+    end)
     refreshCharacterRefs()
-    
+
     if FollowActive then
         if FollowConnection then
             FollowConnection:Disconnect()
             FollowConnection = nil
         end
         if FollowAnim then
-            FollowAnim:Stop()
+            pcall(function() FollowAnim:Stop() end)
             FollowAnim = nil
         end
         FollowActive = false
-        FollowBtn.BackgroundColor3 = COLORS.BLUE
-        FollowBtn.Text = "FOLLOW"
     end
 end)
 
--- ---------- GUI CREATION ----------
-local ScreenGui = Instance.new("ScreenGui")
-ScreenGui.Name = "JSY_Spectate_Final"
-ScreenGui.Parent = game.CoreGui
-ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-
--- Right-side vertical frame
-local RightFrame = Instance.new("Frame")
-RightFrame.Size = UDim2.new(0, 100, 0, 200)
-RightFrame.Position = UDim2.new(1, -110, 0.25, 0)
-RightFrame.BackgroundColor3 = COLORS.BLACK
-RightFrame.BackgroundTransparency = 0.3
-RightFrame.BorderSizePixel = 0
-RightFrame.Active = true
-RightFrame.Parent = ScreenGui
-
-local rightFrameCorner = Instance.new("UICorner", RightFrame)
-rightFrameCorner.CornerRadius = UDim.new(0, 10)
-local rightFrameStroke = Instance.new("UIStroke", RightFrame)
-rightFrameStroke.Color = COLORS.WHITE
-rightFrameStroke.Thickness = 1.5
-
-local function createButton(parent, text, bgColor, positionY)
-    local button = Instance.new("TextButton")
-    button.Size = UDim2.new(0.80, 0, 0, 35)
-    button.Position = UDim2.new(0.5, 0, positionY, 0)
-    button.AnchorPoint = Vector2.new(0.5, 0)
-    button.BackgroundColor3 = bgColor
-    button.BorderSizePixel = 0
-    button.TextColor3 = COLORS.WHITE
-    button.Font = Enum.Font.GothamBold
-    button.TextSize = 13
-    button.Text = text
-    button.AutoButtonColor = false
-    button.Parent = parent
+-- ========== FREEZE CHARACTER SYSTEM ==========
+local function freezeCharacter()
+    if FreezeConnection then
+        FreezeConnection:Disconnect()
+    end
     
-    local corner = Instance.new("UICorner", button)
-    corner.CornerRadius = UDim.new(0, 6)
+    FreezeConnection = RunService.Heartbeat:Connect(function()
+        if humanoid and rootPart then
+            -- Freeze movement
+            humanoid.WalkSpeed = 0
+            humanoid.JumpPower = 0
+            
+            -- Freeze position (optional, for extra security)
+            pcall(function()
+                rootPart.AssemblyLinearVelocity = Vector3.zero
+                rootPart.AssemblyAngularVelocity = Vector3.zero
+            end)
+        end
+    end)
     
-    return button
-end
-
--- Create buttons
-local XBtn = createButton(RightFrame, "CLOSE", COLORS.RED, 0.08)
-local TeleBtn = createButton(RightFrame, "TELEPORT", COLORS.BLUE, 0.38)
-local KickBtn = createButton(RightFrame, "KICK", COLORS.BLUE, 0.58)
-local FollowBtn = createButton(RightFrame, "FOLLOW", COLORS.BLUE, 0.78)
-
--- Bottom navigation frame
-local BottomFrame = Instance.new("Frame")
-BottomFrame.Size = UDim2.new(0, 280, 0, 45)
-BottomFrame.Position = UDim2.new(0.5, -130, 0.80, 0)
-BottomFrame.BackgroundColor3 = COLORS.BLACK
-BottomFrame.BackgroundTransparency = 0.3
-BottomFrame.BorderSizePixel = 0
-BottomFrame.Parent = ScreenGui
-
-local bottomFrameCorner = Instance.new("UICorner", BottomFrame)
-bottomFrameCorner.CornerRadius = UDim.new(0, 10)
-local bottomFrameStroke = Instance.new("UIStroke", BottomFrame)
-bottomFrameStroke.Color = COLORS.WHITE
-bottomFrameStroke.Thickness = 1.5
-
-local function createNavButton(parent, text, positionX)
-    local button = Instance.new("TextButton")
-    button.Size = UDim2.new(0, 70, 0, 30)
-    button.Position = UDim2.new(positionX, 0, 0.5, 0)
-    button.AnchorPoint = Vector2.new(0, 0.5)
-    button.BackgroundColor3 = COLORS.BLUE
-    button.BorderSizePixel = 0
-    button.TextColor3 = COLORS.WHITE
-    button.Font = Enum.Font.GothamBold
-    button.TextSize = 13
-    button.Text = text
-    button.Parent = parent
-    
-    local corner = Instance.new("UICorner", button)
-    corner.CornerRadius = UDim.new(0, 6)
-    
-    return button
-end
-
-local PrevBtn = createNavButton(BottomFrame, "◀ PREV", 0.04)
-local ResetBtn = createNavButton(BottomFrame, "RESET", 0.38)
-local NextBtn = createNavButton(BottomFrame, "NEXT ▶", 0.72)
-
--- Profile frame
-local ProfileFrame = Instance.new("Frame")
-ProfileFrame.Size = UDim2.new(0, 180, 0, 70)
-ProfileFrame.Position = UDim2.new(1, -190, 0, 5)
-ProfileFrame.BackgroundColor3 = COLORS.BLACK
-ProfileFrame.BackgroundTransparency = 0.3
-ProfileFrame.BorderSizePixel = 0
-ProfileFrame.Parent = ScreenGui
-
-local profileFrameCorner = Instance.new("UICorner", ProfileFrame)
-profileFrameCorner.CornerRadius = UDim.new(0, 10)
-local profileFrameStroke = Instance.new("UIStroke", ProfileFrame)
-profileFrameStroke.Color = COLORS.WHITE
-profileFrameStroke.Thickness = 1.5
-
--- Avatar
-local Avatar = Instance.new("ImageLabel")
-Avatar.Size = UDim2.new(0, 40, 0, 40)
-Avatar.Position = UDim2.new(0, 8, 0.5, -20)
-Avatar.BackgroundColor3 = COLORS.WHITE
-Avatar.BorderSizePixel = 0
-Avatar.Parent = ProfileFrame
-local avatarCorner = Instance.new("UICorner", Avatar)
-avatarCorner.CornerRadius = UDim.new(0, 8)
-
--- User info
-local UserInfoFrame = Instance.new("Frame")
-UserInfoFrame.Size = UDim2.new(1, -55, 1, -16)
-UserInfoFrame.Position = UDim2.new(0, 50, 0, 8)
-UserInfoFrame.BackgroundTransparency = 1
-UserInfoFrame.Parent = ProfileFrame
-
-local UsernameLabel = Instance.new("TextLabel")
-UsernameLabel.Size = UDim2.new(1, 0, 0.6, 0)
-UsernameLabel.Position = UDim2.new(0, 0, 0, 0)
-UsernameLabel.BackgroundTransparency = 1
-UsernameLabel.Font = Enum.Font.GothamBold
-UsernameLabel.TextColor3 = COLORS.WHITE
-UsernameLabel.TextXAlignment = Enum.TextXAlignment.Left
-UsernameLabel.TextSize = 13
-UsernameLabel.TextTruncate = Enum.TextTruncate.AtEnd
-UsernameLabel.Text = "Select a player..."
-UsernameLabel.Parent = UserInfoFrame
-
-local AgeLabel = Instance.new("TextLabel")
-AgeLabel.Size = UDim2.new(1, 0, 0.4, 0)
-AgeLabel.Position = UDim2.new(0, 0, 0.6, 0)
-AgeLabel.BackgroundTransparency = 1
-AgeLabel.Font = Enum.Font.Gotham
-AgeLabel.TextColor3 = COLORS.LIGHT_GRAY
-AgeLabel.TextXAlignment = Enum.TextXAlignment.Left
-AgeLabel.TextSize = 11
-AgeLabel.Text = "Age: -- days"
-AgeLabel.Parent = UserInfoFrame
-
-local function updateProfile(plr)
-    if plr and plr:IsA("Player") then
-        UsernameLabel.Text = plr.Name
-        AgeLabel.Text = "Age: " .. tostring(plr.AccountAge or 0) .. " days"
-        Avatar.Image = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. plr.UserId .. "&width=150&height=150&format=png"
-    else
-        UsernameLabel.Text = "No target"
-        AgeLabel.Text = "Use nav buttons"
-        Avatar.Image = ""
+    -- Also disable humanoid controls
+    if humanoid then
+        humanoid.WalkSpeed = 0
+        humanoid.JumpPower = 0
     end
 end
 
--- ---------- TARGETING ----------
+local function unfreezeCharacter()
+    if FreezeConnection then
+        FreezeConnection:Disconnect()
+        FreezeConnection = nil
+    end
+    
+    -- Restore movement
+    if humanoid then
+        humanoid.WalkSpeed = OriginalWalkSpeed
+        humanoid.JumpPower = OriginalJumpPower
+    end
+end
+
+-- ---------- 3D HD GUI - CLEAN LAYOUT ----------
+local ScreenGui = Instance.new("ScreenGui")
+ScreenGui.Name = "JSY_Spectate_Final_Clean"
+ScreenGui.ResetOnSpawn = false
+ScreenGui.Parent = game.CoreGui
+ScreenGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+
+-- Profile frame (LEFT TOP)
+local ProfileFrame = Instance.new("Frame")
+ProfileFrame.Size = UDim2.new(0, 220, 0, 80)
+ProfileFrame.Position = UDim2.new(0, 10, 0, 10)
+ProfileFrame.BackgroundColor3 = COLORS.DARK_BLACK
+ProfileFrame.BackgroundTransparency = 0.1
+ProfileFrame.BorderSizePixel = 0
+ProfileFrame.Parent = ScreenGui
+
+local ProfileCorner = Instance.new("UICorner", ProfileFrame)
+ProfileCorner.CornerRadius = UDim.new(0, 12)
+
+local ProfileStroke = Instance.new("UIStroke", ProfileFrame)
+ProfileStroke.Color = COLORS.NEON_BLUE
+ProfileStroke.Thickness = 2
+
+local Avatar = Instance.new("ImageLabel")
+Avatar.Parent = ProfileFrame
+Avatar.Size = UDim2.new(0, 60, 0, 60)
+Avatar.Position = UDim2.new(0, 10, 0.5, -30)
+Avatar.BackgroundColor3 = COLORS.MEDIUM_BLACK
+Avatar.BorderSizePixel = 0
+
+local AvatarCorner = Instance.new("UICorner", Avatar)
+AvatarCorner.CornerRadius = UDim.new(0, 8)
+
+local AvatarStroke = Instance.new("UIStroke", Avatar)
+AvatarStroke.Color = COLORS.NEON_BLUE
+AvatarStroke.Thickness = 2
+
+local UserInfoFrame = Instance.new("Frame", ProfileFrame)
+UserInfoFrame.Size = UDim2.new(1, -80, 1, -16)
+UserInfoFrame.Position = UDim2.new(0, 75, 0, 8)
+UserInfoFrame.BackgroundTransparency = 1
+
+local UsernameLabel = Instance.new("TextLabel", UserInfoFrame)
+UsernameLabel.Size = UDim2.new(1, 0, 0.6, 0)
+UsernameLabel.Position = UDim2.new(0,0,0,0)
+UsernameLabel.BackgroundTransparency = 1
+UsernameLabel.Font = Enum.Font.GothamBold
+UsernameLabel.TextColor3 = COLORS.NEON_BLUE
+UsernameLabel.TextXAlignment = Enum.TextXAlignment.Left
+UsernameLabel.TextSize = 14
+UsernameLabel.TextTruncate = Enum.TextTruncate.AtEnd
+UsernameLabel.Text = "Select a player..."
+
+local AgeLabel = Instance.new("TextLabel", UserInfoFrame)
+AgeLabel.Size = UDim2.new(1,0,0.4,0)
+AgeLabel.Position = UDim2.new(0,0,0.6,0)
+AgeLabel.BackgroundTransparency = 1
+AgeLabel.Font = Enum.Font.Gotham
+AgeLabel.TextColor3 = COLORS.LIGHT_BLUE
+AgeLabel.TextXAlignment = Enum.TextXAlignment.Left
+AgeLabel.TextSize = 11
+AgeLabel.Text = "Age: -- days | ID: --"
+
+-- Status Indicator untuk Profile
+local StatusIndicator = Instance.new("Frame")
+StatusIndicator.Size = UDim2.new(0, 8, 0, 8)
+StatusIndicator.Position = UDim2.new(1, -15, 0, 10)
+StatusIndicator.BackgroundColor3 = COLORS.RED
+StatusIndicator.BorderSizePixel = 0
+StatusIndicator.Parent = ProfileFrame
+
+local StatusCorner = Instance.new("UICorner", StatusIndicator)
+StatusCorner.CornerRadius = UDim.new(1, 0)
+
+-- Main Controls Frame (RIGHT TOP) - Lebih rapi
+local ControlsFrame = Instance.new("Frame")
+ControlsFrame.Size = UDim2.new(0, 150, 0, 220)
+ControlsFrame.Position = UDim2.new(1, -160, 0, 10)
+ControlsFrame.BackgroundColor3 = COLORS.DARK_BLACK
+ControlsFrame.BackgroundTransparency = 0.1
+ControlsFrame.BorderSizePixel = 0
+ControlsFrame.Parent = ScreenGui
+
+local ControlsCorner = Instance.new("UICorner", ControlsFrame)
+ControlsCorner.CornerRadius = UDim.new(0, 12)
+
+local ControlsStroke = Instance.new("UIStroke", ControlsFrame)
+ControlsStroke.Color = COLORS.NEON_BLUE
+ControlsStroke.Thickness = 2
+
+-- Header untuk Controls
+local ControlsHeader = Instance.new("TextLabel")
+ControlsHeader.Size = UDim2.new(1, 0, 0, 25)
+ControlsHeader.Position = UDim2.new(0, 0, 0, 0)
+ControlsHeader.BackgroundColor3 = COLORS.DARK_BLUE
+ControlsHeader.BorderSizePixel = 0
+ControlsHeader.Text = "CONTROLS"
+ControlsHeader.TextColor3 = COLORS.NEON_BLUE
+ControlsHeader.Font = Enum.Font.GothamBold
+ControlsHeader.TextSize = 12
+ControlsHeader.Parent = ControlsFrame
+
+local HeaderCorner = Instance.new("UICorner", ControlsHeader)
+HeaderCorner.CornerRadius = UDim.new(0, 12)
+
+-- Improved 3D Button Function untuk Controls
+local function createControlButton(parent, text, bgColor, positionY, icon)
+    local ButtonContainer = Instance.new("Frame")
+    ButtonContainer.Size = UDim2.new(0.9, 0, 0, 36)
+    ButtonContainer.Position = UDim2.new(0.5, 0, positionY, 0)
+    ButtonContainer.AnchorPoint = Vector2.new(0.5, 0)
+    ButtonContainer.BackgroundColor3 = COLORS.MEDIUM_BLACK
+    ButtonContainer.BorderSizePixel = 0
+    ButtonContainer.Parent = parent
+    
+    local ButtonCorner = Instance.new("UICorner", ButtonContainer)
+    ButtonCorner.CornerRadius = UDim.new(0, 8)
+    
+    local ButtonStroke = Instance.new("UIStroke", ButtonContainer)
+    ButtonStroke.Color = COLORS.NEON_BLUE
+    ButtonStroke.Thickness = 2
+    
+    local Button = Instance.new("TextButton")
+    Button.Size = UDim2.new(1, -4, 1, -4)
+    Button.Position = UDim2.new(0, 2, 0, 2)
+    Button.BackgroundColor3 = bgColor
+    Button.BorderSizePixel = 0
+    Button.TextColor3 = COLORS.WHITE
+    Button.Font = Enum.Font.GothamBold
+    Button.TextSize = 11
+    Button.Text = (icon or "") .. " " .. text
+    Button.AutoButtonColor = false
+    Button.Parent = ButtonContainer
+    
+    local ButtonInnerCorner = Instance.new("UICorner", Button)
+    ButtonInnerCorner.CornerRadius = UDim.new(0, 6)
+    
+    -- Improved Hover effects
+    Button.MouseEnter:Connect(function()
+        TweenService:Create(Button, TweenInfo.new(0.2), {BackgroundColor3 = COLORS.MEDIUM_BLUE}):Play()
+        TweenService:Create(Button, TweenInfo.new(0.2), {TextColor3 = COLORS.NEON_BLUE}):Play()
+    end)
+    
+    Button.MouseLeave:Connect(function()
+        TweenService:Create(Button, TweenInfo.new(0.2), {BackgroundColor3 = bgColor}):Play()
+        TweenService:Create(Button, TweenInfo.new(0.2), {TextColor3 = COLORS.WHITE}):Play()
+    end)
+    
+    return Button
+end
+
+-- Create control buttons di frame kanan dengan spacing yang rapi
+local TeleBtn = createControlButton(ControlsFrame, "TELEPORT", COLORS.DARK_BLUE, 0.15, "🚀")
+local KickBtn = createControlButton(ControlsFrame, "KICK", COLORS.DARK_BLUE, 0.35, "⚡")
+local FollowBtn = createControlButton(ControlsFrame, "FOLLOW", COLORS.DARK_BLUE, 0.55, "🎯")
+local SendPartBtn = createControlButton(ControlsFrame, "SEND PART", COLORS.DARK_BLUE, 0.75, "📦")
+
+-- Bottom navigation (CENTER BOTTOM) - Prev - Close - Next
+local BottomFrame = Instance.new("Frame")
+BottomFrame.Size = UDim2.new(0, 320, 0, 50)
+BottomFrame.Position = UDim2.new(0.5, -160, 1, -70)
+BottomFrame.BackgroundColor3 = COLORS.DARK_BLACK
+BottomFrame.BackgroundTransparency = 0.1
+BottomFrame.BorderSizePixel = 0
+BottomFrame.Parent = ScreenGui
+
+local BottomCorner = Instance.new("UICorner", BottomFrame)
+BottomCorner.CornerRadius = UDim.new(0, 12)
+
+local BottomStroke = Instance.new("UIStroke", BottomFrame)
+BottomStroke.Color = COLORS.NEON_BLUE
+BottomStroke.Thickness = 2
+
+local function createNavButton3D(parent, text, positionX, icon, isClose)
+    local ButtonContainer = Instance.new("Frame")
+    ButtonContainer.Size = UDim2.new(0, 90, 0, 35)
+    ButtonContainer.Position = UDim2.new(positionX, 0, 0.5, 0)
+    ButtonContainer.AnchorPoint = Vector2.new(0, 0.5)
+    
+    -- Jika tombol Close, gunakan warna merah
+    local buttonColor = isClose and COLORS.RED or COLORS.DARK_BLUE
+    ButtonContainer.BackgroundColor3 = COLORS.MEDIUM_BLACK
+    ButtonContainer.BorderSizePixel = 0
+    ButtonContainer.Parent = parent
+    
+    local ButtonCorner = Instance.new("UICorner", ButtonContainer)
+    ButtonCorner.CornerRadius = UDim.new(0, 8)
+    
+    local ButtonStroke = Instance.new("UIStroke", ButtonContainer)
+    ButtonStroke.Color = COLORS.NEON_BLUE
+    ButtonStroke.Thickness = 2
+    
+    local button = Instance.new("TextButton")
+    button.Size = UDim2.new(1, -4, 1, -4)
+    button.Position = UDim2.new(0, 2, 0, 2)
+    button.BackgroundColor3 = buttonColor
+    button.BorderSizePixel = 0
+    button.TextColor3 = COLORS.WHITE
+    button.Font = Enum.Font.GothamBold
+    button.TextSize = 12
+    button.Text = (icon or "") .. " " .. text
+    button.Parent = ButtonContainer
+    
+    local ButtonInnerCorner = Instance.new("UICorner", button)
+    ButtonInnerCorner.CornerRadius = UDim.new(0, 6)
+    
+    -- Hover effects
+    button.MouseEnter:Connect(function()
+        local hoverColor = isClose and Color3.fromRGB(255, 100, 100) or COLORS.MEDIUM_BLUE
+        TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = hoverColor}):Play()
+    end)
+    
+    button.MouseLeave:Connect(function()
+        TweenService:Create(button, TweenInfo.new(0.2), {BackgroundColor3 = buttonColor}):Play()
+    end)
+    
+    return button
+end
+
+-- Tombol navigasi: Prev - Close - Next
+local PrevBtn = createNavButton3D(BottomFrame, "PREV", 0.05, "◀", false)
+local CloseNavBtn = createNavButton3D(BottomFrame, "CLOSE", 0.35, "❌", true)
+local NextBtn = createNavButton3D(BottomFrame, "NEXT", 0.65, "▶", false)
+
+-- Function to update profile dengan efek visual
+local function updateProfile(plr)
+    if plr and plr:IsA("Player") then
+        UsernameLabel.Text = plr.Name
+        AgeLabel.Text = "Age: " .. tostring(plr.AccountAge or 0) .. " days | ID: " .. tostring(plr.UserId)
+        
+        -- Update status indicator
+        StatusIndicator.BackgroundColor3 = COLORS.GREEN
+        
+        -- Animation effect
+        TweenService:Create(UsernameLabel, TweenInfo.new(0.3), {TextColor3 = COLORS.GREEN}):Play()
+        task.wait(0.3)
+        TweenService:Create(UsernameLabel, TweenInfo.new(0.3), {TextColor3 = COLORS.NEON_BLUE}):Play()
+        
+        pcall(function()
+            Avatar.Image = "https://www.roblox.com/headshot-thumbnail/image?userId=" .. plr.UserId .. "&width=150&height=150&format=png"
+        end)
+    else
+        UsernameLabel.Text = "No target selected"
+        AgeLabel.Text = "Age: -- days | ID: --"
+        Avatar.Image = ""
+        UsernameLabel.TextColor3 = COLORS.NEON_BLUE
+        StatusIndicator.BackgroundColor3 = COLORS.RED
+    end
+end
+
+-- ========== COMPLETE SEND PART FUNCTION ==========
+-- One-time unanchor helper (small burst)
+local function OneTimeUnanchor()
+    if _G.__JSY_UnanchorCooldown then return end
+    _G.__JSY_UnanchorCooldown = true
+    task.spawn(function()
+        local start = tick()
+        while tick() - start < 1 do
+            for _, obj in ipairs(Workspace:GetDescendants()) do
+                if obj:IsA("RopeConstraint") then
+                    local p0 = obj.Attachment0 and obj.Attachment0.Parent
+                    local p1 = obj.Attachment1 and obj.Attachment1.Parent
+                    pcall(function() obj:Destroy() end)
+                    if p0 and p0:IsA("BasePart") then p0.Anchored = false end
+                    if p1 and p1:IsA("BasePart") then p1.Anchored = false end
+                end
+            end
+
+            for _, part in ipairs(Workspace:GetDescendants()) do
+                if part:IsA("BasePart") and not part.Anchored then
+                    part.AssemblyLinearVelocity = Vector3.new(math.random(-50,50), math.random(20,100), math.random(-50,50))
+                end
+            end
+
+            task.wait(0.2)
+        end
+        _G.__JSY_UnanchorCooldown = false
+    end)
+end
+
+local function GetAllPartsRecursive(parent)
+    local parts = {}
+    for _, obj in ipairs(parent:GetChildren()) do
+        if obj:IsA("BasePart") then
+            table.insert(parts, obj)
+        elseif obj:IsA("Model") or obj:IsA("Folder") then
+            for _, p in ipairs(GetAllPartsRecursive(obj)) do
+                table.insert(parts, p)
+            end
+        end
+    end
+    return parts
+end
+
+-- optional network stabilizer (keep sim radius large) - best-effort
+local function EnableNetworkStabilizer()
+    if NetworkConnection then return end
+    pcall(function()
+        NetworkConnection = RunService.Heartbeat:Connect(function()
+            pcall(function()
+                -- sethiddenproperty may not exist in normal environments; ignore errors
+                if sethiddenproperty then
+                    sethiddenproperty(LP, "SimulationRadius", math.huge)
+                end
+            end)
+        end)
+    end)
+end
+
+local function DisableNetworkStabilizer()
+    if NetworkConnection then
+        NetworkConnection:Disconnect()
+        NetworkConnection = nil
+    end
+end
+
+local function sendUnanchoredPartsToTarget(target)
+    if not target or not target.Character then return end
+    local targetHRP = target.Character:FindFirstChild("HumanoidRootPart")
+    if not targetHRP then return end
+
+    -- enable network helper briefly
+    EnableNetworkStabilizer()
+
+    OneTimeUnanchor()
+
+    -- prepare folder + invisible target part + attachment
+    local folder = Workspace:FindFirstChild("JSY_SendPartFolder") or Instance.new("Folder", Workspace)
+    folder.Name = "JSY_SendPartFolder"
+
+    local targetPart = folder:FindFirstChild("TargetPart") or Instance.new("Part", folder)
+    targetPart.Name = "TargetPart"
+    targetPart.Anchored = true
+    targetPart.CanCollide = false
+    targetPart.Transparency = 1
+    targetPart.Size = Vector3.new(1,1,1)
+    targetPart.CFrame = targetHRP.CFrame
+    local attach1 = targetPart:FindFirstChild("Attachment") or Instance.new("Attachment", targetPart)
+
+    -- helper to attach a part and schedule restore after 2 seconds
+    local function ForcePart(v)
+        if not v:IsA("BasePart") then return end
+        -- skip important/anchored/character parts
+        if v.Anchored then return end
+        if v.Parent and v.Parent:FindFirstChildOfClass("Humanoid") then return end
+        if v.Name == "Handle" then return end
+
+        -- capture original state
+        local originalCFrame = v.CFrame
+        local originalAnchored = v.Anchored
+        local originalCanCollide = v.CanCollide
+        local originalParent = v.Parent
+
+        -- remove movers/old constraints
+        for _, x in ipairs(v:GetChildren()) do
+            if x:IsA("BodyMover") or x:IsA("AlignPosition") or x:IsA("Torque") or x:IsA("RocketPropulsion") or x:IsA("AlignOrientation") then
+                pcall(function() x:Destroy() end)
+            end
+        end
+
+        -- apply temporary state
+        v.CanCollide = false
+
+        local torque = Instance.new("Torque")
+        torque.Parent = v
+        -- high torque so part resists rotation while aligning
+        torque.Torque = Vector3.new(100000,100000,100000)
+
+        local align = Instance.new("AlignPosition")
+        align.Parent = v
+        align.MaxForce = math.huge
+        align.MaxVelocity = math.huge
+        align.Responsiveness = 200
+
+        local attach2 = Instance.new("Attachment", v)
+        torque.Attachment0 = attach2
+        align.Attachment0 = attach2
+        align.Attachment1 = attach1
+
+        -- schedule restore after 2 seconds (auto-return)
+        task.spawn(function()
+            local started = tick()
+            -- wait 2 seconds but be robust if object removed
+            while tick() - started < 2 do
+                if not v or not v.Parent then break end
+                task.wait(0.05)
+            end
+
+            -- cleanup align/torque/attachment and restore properties
+            pcall(function()
+                -- stop any velocities
+                if v and v:IsA("BasePart") then
+                    v.AssemblyLinearVelocity = Vector3.zero
+                    v.AssemblyAngularVelocity = Vector3.zero
+                end
+
+                -- ensure align/torque/attachment exist before destroying
+                if align and align.Parent then align:Destroy() end
+                if torque and torque.Parent then torque:Destroy() end
+                -- attachment inside v
+                for _, child in ipairs(v:GetChildren()) do
+                    if child:IsA("Attachment") then
+                        -- avoid removing attachments that were present before? We created attach2 only; best-effort: remove it (safe)
+                        if child ~= attach1 then
+                            pcall(function() child:Destroy() end)
+                        end
+                    end
+                end
+
+                -- restore collision/anchored and teleport back to original cframe
+                if v and v.Parent then
+                    pcall(function()
+                        v.CanCollide = originalCanCollide
+                        v.Anchored = originalAnchored
+                        -- small delay to ensure physics settled
+                        task.wait(0.05)
+                        v.CFrame = originalCFrame
+                    end)
+                end
+            end)
+        end)
+    end
+
+    -- collect parts deep
+    local parts = GetAllPartsRecursive(Workspace)
+    for _, p in ipairs(parts) do
+        pcall(function()
+            if not p.Anchored then
+                ForcePart(p)
+            end
+        end)
+    end
+
+    -- run for duration then cleanup folder (folder may be empty since we didn't create per-part new parts)
+    task.spawn(function()
+        local duration = 5
+        local start = tick()
+        while tick() - start < duration do
+            -- keep invisible target part following the target
+            if attach1 and targetHRP then
+                pcall(function()
+                    attach1.WorldCFrame = targetHRP.CFrame
+                    targetPart.CFrame = targetHRP.CFrame
+                end)
+            end
+            task.wait()
+        end
+        -- cleanup
+        pcall(function() folder:Destroy() end)
+        DisableNetworkStabilizer()
+    end)
+end
+
+-- ========== AUTO-OFF SEND PART FUNCTION ==========
+local function turnOffSendPart()
+    if SendPartActive then
+        SendPartActive = false
+        SendPartBtn.Text = "📦 SEND PART"
+        TweenService:Create(SendPartBtn, TweenInfo.new(0.3), {BackgroundColor3 = COLORS.DARK_BLUE}):Play()
+        
+        -- Unfreeze character when Send Part turns off
+        unfreezeCharacter()
+    end
+end
+
+-- ========== TARGETING SYSTEM ==========
 local function getTargetablePlayers()
     local list = {}
     for _, p in pairs(Players:GetPlayers()) do
@@ -232,30 +612,31 @@ end
 
 local function refreshTargetList()
     TargetList = getTargetablePlayers()
-end
-
-local function spectate(index)
-    if not Active then return end
-    refreshTargetList()
     if #TargetList == 0 then
-        CurrentTarget = nil
         CurrentIndex = 0
+        CurrentTarget = nil
         updateProfile(nil)
         return
     end
-    if index < 1 then index = #TargetList end
-    if index > #TargetList then index = 1 end
-    CurrentIndex = index
+    if CurrentIndex < 1 or CurrentIndex > #TargetList then
+        CurrentIndex = 1
+    end
     CurrentTarget = TargetList[CurrentIndex]
     updateProfile(CurrentTarget)
 end
+
+refreshTargetList()
 
 PrevBtn.MouseButton1Click:Connect(function()
     if #TargetList == 0 then refreshTargetList() end
     if #TargetList == 0 then return end
     local nextIndex = CurrentIndex - 1
     if nextIndex < 1 then nextIndex = #TargetList end
-    spectate(nextIndex)
+    CurrentIndex = nextIndex
+    CurrentTarget = TargetList[CurrentIndex]
+    updateProfile(CurrentTarget)
+    -- Auto turn off Send Part ketika pindah target
+    turnOffSendPart()
 end)
 
 NextBtn.MouseButton1Click:Connect(function()
@@ -263,21 +644,41 @@ NextBtn.MouseButton1Click:Connect(function()
     if #TargetList == 0 then return end
     local nextIndex = CurrentIndex + 1
     if nextIndex > #TargetList then nextIndex = 1 end
-    spectate(nextIndex)
+    CurrentIndex = nextIndex
+    CurrentTarget = TargetList[CurrentIndex]
+    updateProfile(CurrentTarget)
+    -- Auto turn off Send Part ketika pindah target
+    turnOffSendPart()
 end)
 
-ResetBtn.MouseButton1Click:Connect(function()
+Players.PlayerAdded:Connect(function() 
+    refreshTargetList() 
+end)
+Players.PlayerRemoving:Connect(function()
     refreshTargetList()
-    if #TargetList > 0 then 
-        spectate(1) 
-    else
+    if CurrentTarget and not CurrentTarget.Parent then
         CurrentTarget = nil
-        CurrentIndex = 0
         updateProfile(nil)
+        if FollowActive then
+            FollowActive = false
+            if FollowConnection then FollowConnection:Disconnect() FollowConnection = nil end
+            if FollowAnim then pcall(function() FollowAnim:Stop() end) FollowAnim = nil end
+            FollowBtn.Text = "🎯 FOLLOW"
+            TweenService:Create(FollowBtn, TweenInfo.new(0.3), {BackgroundColor3 = COLORS.DARK_BLUE}):Play()
+        end
+        if FlingActive then
+            FlingActive = false
+            if FlingThread then FlingThread = nil end
+            KickBtn.Text = "⚡ KICK"
+            TweenService:Create(KickBtn, TweenInfo.new(0.3), {BackgroundColor3 = COLORS.DARK_BLUE}):Play()
+        end
+        if SendPartActive then
+            turnOffSendPart()
+        end
     end
 end)
 
--- ---------- CAMERA ----------
+-- ========== CAMERA SYSTEM ==========
 RunService.RenderStepped:Connect(function()
     if not Active then return end
     if CurrentTarget and CurrentTarget.Character then
@@ -288,18 +689,22 @@ RunService.RenderStepped:Connect(function()
     end
 end)
 
--- ---------- TELEPORT ----------
+-- ========== TELEPORT FUNCTION ==========
 TeleBtn.MouseButton1Click:Connect(function()
     if not CurrentTarget then return end
     local lpHRP = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
     local targetHRP = CurrentTarget.Character and CurrentTarget.Character:FindFirstChild("HumanoidRootPart")
     if lpHRP and targetHRP then
         lpHRP.CFrame = targetHRP.CFrame + Vector3.new(0, 3, 0)
+        -- Visual feedback
+        TweenService:Create(TeleBtn, TweenInfo.new(0.5), {BackgroundColor3 = COLORS.GREEN}):Play()
+        task.wait(0.5)
+        TweenService:Create(TeleBtn, TweenInfo.new(0.5), {BackgroundColor3 = COLORS.DARK_BLUE}):Play()
     end
 end)
 
--- ---------- KICK (with Save Position) ----------
-local function flingLoop()
+-- ========== KICK/FLING FUNCTION ==========
+local function flingLoop(originalLP)
     while FlingActive do
         RunService.Heartbeat:Wait()
         local lpHRP = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
@@ -316,57 +721,50 @@ end
 
 KickBtn.MouseButton1Click:Connect(function()
     if not CurrentTarget then return end
-    
-    FlingActive = not FlingActive
-    
     local lpHRP = LP.Character and LP.Character:FindFirstChild("HumanoidRootPart")
     if not lpHRP then return end
-    
+
+    FlingActive = not FlingActive
+
     if FlingActive then
-        -- Simpan posisi sebelum kick
         OriginalCFrame = lpHRP.CFrame
-        
-        KickBtn.BackgroundColor3 = COLORS.GREEN
-        KickBtn.Text = "KICKING"
-        
+        KickBtn.Text = "⚡ KICKING"
+        TweenService:Create(KickBtn, TweenInfo.new(0.3), {BackgroundColor3 = COLORS.RED}):Play()
         if not FlingThread then
-            FlingThread = task.spawn(flingLoop)
+            FlingThread = task.spawn(function() flingLoop(lpHRP) end)
         end
     else
-        -- Nonaktifkan fling dan kembalikan posisi awal
         FlingActive = false
-        KickBtn.BackgroundColor3 = COLORS.BLUE
-        KickBtn.Text = "KICK"
-        
-        if FlingThread then
-            FlingThread = nil
-        end
-        
+        KickBtn.Text = "⚡ KICK"
+        TweenService:Create(KickBtn, TweenInfo.new(0.3), {BackgroundColor3 = COLORS.DARK_BLUE}):Play()
+        FlingThread = nil
         task.defer(function()
-            if lpHRP and OriginalCFrame then
-                lpHRP.AssemblyLinearVelocity = Vector3.zero
-                lpHRP.AssemblyAngularVelocity = Vector3.zero
-                task.wait(0.1)
-                lpHRP.CFrame = OriginalCFrame
-            end
+            pcall(function()
+                if lpHRP and OriginalCFrame then
+                    lpHRP.AssemblyLinearVelocity = Vector3.zero
+                    lpHRP.AssemblyAngularVelocity = Vector3.zero
+                    task.wait(0.1)
+                    lpHRP.CFrame = OriginalCFrame
+                end
+            end)
         end)
     end
 end)
 
--- ---------- FOLLOW ----------
+-- ========== FOLLOW FUNCTION ==========
 local function stopFollow()
     FollowActive = false
-    if FollowConnection then FollowConnection:Disconnect() end
-    if FollowAnim then FollowAnim:Stop() end
-    FollowBtn.BackgroundColor3 = COLORS.BLUE
-    FollowBtn.Text = "FOLLOW"
+    if FollowConnection then FollowConnection:Disconnect() FollowConnection = nil end
+    if FollowAnim then pcall(function() FollowAnim:Stop() end) FollowAnim = nil end
+    FollowBtn.Text = "🎯 FOLLOW"
+    TweenService:Create(FollowBtn, TweenInfo.new(0.3), {BackgroundColor3 = COLORS.DARK_BLUE}):Play()
 end
 
 local function startFollowToTarget(target)
-    if not target or not rootPart then return end
+    if not target or not rootPart or not humanoid then return end
     FollowActive = true
-    FollowBtn.BackgroundColor3 = COLORS.GREEN
-    FollowBtn.Text = "FOLLOWING"
+    FollowBtn.Text = "🎯 FOLLOWING"
+    TweenService:Create(FollowBtn, TweenInfo.new(0.3), {BackgroundColor3 = COLORS.GREEN}):Play()
 
     pcall(function()
         local anim = Instance.new("Animation")
@@ -386,43 +784,88 @@ local function startFollowToTarget(target)
 end
 
 FollowBtn.MouseButton1Click:Connect(function()
-    if FollowActive then stopFollow() return end
+    if FollowActive then
+        stopFollow()
+        return
+    end
     if not CurrentTarget then return end
     refreshCharacterRefs()
     startFollowToTarget(CurrentTarget)
 end)
 
--- ---------- CLOSE ----------
-XBtn.MouseButton1Click:Connect(function()
+-- ========== SEND PART BUTTON (PERSISTENT TOGGLE) ==========
+SendPartBtn.MouseButton1Click:Connect(function()
+    -- toggle state
+    SendPartActive = not SendPartActive
+
+    if SendPartActive then
+        -- turn UI to active
+        SendPartBtn.Text = "📦 SENDING (ON)"
+        TweenService:Create(SendPartBtn, TweenInfo.new(0.3), {BackgroundColor3 = COLORS.GREEN}):Play()
+
+        -- FREEZE CHARACTER when Send Part is active
+        freezeCharacter()
+
+        -- spawn loop if not already running
+        if not SendPartLoopThread then
+            SendPartLoopThread = task.spawn(function()
+                while SendPartActive do
+                    -- only run when there's a current target
+                    if CurrentTarget and CurrentTarget.Character then
+                        -- call in pcall to avoid errors killing the loop
+                        pcall(function()
+                            sendUnanchoredPartsToTarget(CurrentTarget)
+                        end)
+                    end
+                    -- wait roughly 2.2s so parts have time to restore before next send
+                    task.wait(2.2)
+                end
+                -- loop ended, clear ref
+                SendPartLoopThread = nil
+            end)
+        end
+    else
+        -- user turned it off
+        SendPartBtn.Text = "📦 SEND PART"
+        TweenService:Create(SendPartBtn, TweenInfo.new(0.3), {BackgroundColor3 = COLORS.DARK_BLUE}):Play()
+        
+        -- UNFREEZE CHARACTER when Send Part is turned off
+        unfreezeCharacter()
+    end
+end)
+
+-- ========== CLOSE FUNCTION ==========
+CloseNavBtn.MouseButton1Click:Connect(function()
+    -- Animation sebelum close
+    TweenService:Create(ProfileFrame, TweenInfo.new(0.4), {BackgroundTransparency = 1}):Play()
+    TweenService:Create(ControlsFrame, TweenInfo.new(0.4), {BackgroundTransparency = 1}):Play()
+    TweenService:Create(BottomFrame, TweenInfo.new(0.4), {BackgroundTransparency = 1}):Play()
+    
+    task.wait(0.4)
+    
     Active = false
     FlingActive = false
-    if FlingThread then FlingThread = nil end
-    stopFollow()
+    SendPartActive = false
+    
+    -- UNFREEZE CHARACTER ketika close
+    unfreezeCharacter()
+    
+    if FollowConnection then FollowConnection:Disconnect() FollowConnection = nil end
+    if FollowAnim then pcall(function() FollowAnim:Stop() end) FollowAnim = nil end
+    
     if LP.Character and LP.Character:FindFirstChild("Humanoid") then
         Cam.CameraSubject = LP.Character:FindFirstChild("Humanoid")
     end
-    ScreenGui:Destroy()
+    
+    pcall(function() ScreenGui:Destroy() end)
 end)
 
-Players.PlayerAdded:Connect(refreshTargetList)
-Players.PlayerRemoving:Connect(function()
+-- Initial setup
+task.defer(function()
     refreshTargetList()
-    if CurrentTarget and not CurrentTarget.Parent then
-        CurrentTarget = nil
-        updateProfile(nil)
-        if FollowActive then stopFollow() end
-        if FlingActive then 
-            FlingActive = false
-            KickBtn.BackgroundColor3 = COLORS.BLUE
-            KickBtn.Text = "KICK"
-        end
+    if #TargetList > 0 then
+        CurrentIndex = 1
+        CurrentTarget = TargetList[1]
+        updateProfile(CurrentTarget)
     end
-end)
-
--- ---------- INIT ----------
-refreshTargetList()
-if #TargetList > 0 then
-    CurrentIndex = 1
-    CurrentTarget = TargetList[1]
-    updateProfile(CurrentTarget)
-end
+end)                                
